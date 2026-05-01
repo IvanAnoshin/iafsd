@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getCurrentSession, touchSession, verifyCsrf } from '@/lib/auth';
 import { writeAuditLog } from '@/lib/audit';
-import { canViewerAccessPost, normalizePostLocation, normalizePostMedia, normalizePostText, normalizePostVisibility, serializePostForViewer } from '@/lib/posts';
+import { POST_TEXT_LIMIT, canViewerAccessPost, isPostTextTooLong, normalizePostLocation, normalizePostMedia, normalizePostText, normalizePostVisibility, serializePostForViewer } from '@/lib/posts';
 import { buildPostListInclude } from '@/lib/performance';
 
 
@@ -73,7 +73,10 @@ export async function PUT(request, { params }) {
     }
 
     const body = await request.json().catch(() => ({}));
-    const text = normalizePostText(body.text, 1200);
+    if (isPostTextTooLong(body.text)) {
+      return NextResponse.json({ error: 'Текст поста не должен превышать ' + POST_TEXT_LIMIT + ' символов.' }, { status: 400 });
+    }
+    const text = normalizePostText(body.text);
     const media = body.media === undefined ? null : normalizePostMedia(body.media, 10);
     const visibility = normalizePostVisibility(body.visibility, existing.visibility || 'public');
     const location = body.location === undefined ? existing.location : normalizePostLocation(body.location);
@@ -117,7 +120,7 @@ export async function PUT(request, { params }) {
   } catch (error) {
     console.error('feed/post update failed', error);
     await writeAuditLog({ request, session, action: 'feed.post.update', entityType: 'post', entityId: postIdNum, status: 'error', metadata: { message: error?.message || 'unknown_error' } }).catch(() => null);
-    return NextResponse.json({ error: 'Не удалось обновить пост.' }, { status: 500 });
+    return NextResponse.json({ error: error?.status && error.status < 500 ? error.message : 'Не удалось обновить пост.' }, { status: error?.status || 500 });
   }
 }
 

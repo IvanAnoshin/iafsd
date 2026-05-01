@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getCurrentSession, touchSession, verifyCsrf } from '@/lib/auth';
 import { writeAuditLog } from '@/lib/audit';
-import { buildPersonalPostPayload, normalizePostLocation, normalizePostMedia, normalizePostText, normalizePostVisibility, serializePostForViewer, serializePostsForViewer } from '@/lib/posts';
+import { POST_TEXT_LIMIT, buildPersonalPostPayload, isPostTextTooLong, normalizePostLocation, normalizePostMedia, normalizePostText, normalizePostVisibility, serializePostForViewer, serializePostsForViewer } from '@/lib/posts';
 import { buildCreatedBeforeWhere, buildPostListInclude, getNextCreatedAtCursor, parsePositiveInt, PERF_LIMITS } from '@/lib/performance';
 import { enforceRateLimit } from '@/lib/anti-abuse';
 import { assertMediaReferencesBelongToScope } from '@/lib/media-security';
@@ -81,7 +81,10 @@ export async function POST(request) {
     if (postLimit) return postLimit;
 
     const body = await request.json();
-    const text = normalizePostText(body.text, 1200);
+    if (isPostTextTooLong(body.text)) {
+      return NextResponse.json({ error: 'Текст поста не должен превышать ' + POST_TEXT_LIMIT + ' символов.' }, { status: 400 });
+    }
+    const text = normalizePostText(body.text);
     const location = normalizePostLocation(body.location);
     const media = normalizePostMedia(body.media, 10);
     await assertMediaReferencesBelongToScope({
@@ -136,6 +139,6 @@ export async function POST(request) {
       status: 'error',
       metadata: { message: error?.message || 'unknown_error' },
     });
-    return NextResponse.json({ error: 'Не удалось опубликовать пост.' }, { status: 500 });
+    return NextResponse.json({ error: error?.status && error.status < 500 ? error.message : 'Не удалось опубликовать пост.' }, { status: error?.status || 500 });
   }
 }

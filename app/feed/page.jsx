@@ -8,7 +8,6 @@ import { MinimalActionDialog, useMinimalActionDialog } from '@/components/Minima
 import { readPageCache, writePageCache } from '@/lib/page-cache';
 import { sanitizeUrlForClient } from '@/lib/url-safety';
 import PostRepostPreview from '@/components/PostRepostPreview';
-import PostShareSheet from '@/components/PostShareSheet';
 import { COMMUNITIES_UI_ENABLED } from '@/lib/product-flags';
 import { buildCommentThreadData, formatCommentAuthorName, getCollapsedCommentText, getCommentAuthorInitial, getCommentModerationHint, getCommentModerationLabel, getCommentModerationTone, getCommentReplyTarget, getCommentRootId, getCommentSocialSignals, getCommentSortLabel, getCommentThreadToggleLabel, getRemainingCommentThreadCount, isCommentTextLong, isCommentVisible, normalizeCommentDraft, sortCommentThreads } from '@/lib/comments-client';
 
@@ -25,6 +24,7 @@ const defaultFeedSettings = {
 const FEED_CACHE_KEY = 'page:feed';
 const FEED_CACHE_TTL = 2 * 60 * 1000;
 const COMMENT_DRAFT_KEY_PREFIX = 'friendscape:feed-comment-draft:';
+const POST_TEXT_LIMIT = 1000;
 
 function getCommentDraftKey(postId) {
   return `${COMMENT_DRAFT_KEY_PREFIX}${Number(postId || 0)}`;
@@ -81,6 +81,40 @@ function formatName(author) {
 function safeStat(value) {
   const number = Number(value);
   return Number.isFinite(number) ? number : 0;
+}
+
+function isClientOffline() {
+  return typeof navigator !== 'undefined' && navigator.onLine === false;
+}
+
+function patchPostVoteState(post, nextVoteValue) {
+  if (!post) return post;
+  const prevVote = Number(post.current_vote || 0);
+  const nextVote = Number(nextVoteValue || 0);
+  const plusDelta = (nextVote === 1 ? 1 : 0) - (prevVote === 1 ? 1 : 0);
+  const minusDelta = (nextVote === -1 ? 1 : 0) - (prevVote === -1 ? 1 : 0);
+  return {
+    ...post,
+    current_vote: nextVote,
+    stats: {
+      ...(post.stats || {}),
+      plus: Math.max(0, safeStat(post?.stats?.plus) + plusDelta),
+      minus: Math.max(0, safeStat(post?.stats?.minus) + minusDelta),
+    },
+  };
+}
+
+function patchPostSaveState(post) {
+  if (!post) return post;
+  const nextSaved = !post.is_saved;
+  return {
+    ...post,
+    is_saved: nextSaved,
+    stats: {
+      ...(post.stats || {}),
+      saves: Math.max(0, safeStat(post?.stats?.saves) + (nextSaved ? 1 : -1)),
+    },
+  };
 }
 
 function buildCommentText(text) {
@@ -190,7 +224,7 @@ function getFeedSourceEmptyCopy(source) {
   }
   return {
     title: 'Лента пуста',
-    text: 'Публикации появятся здесь, когда авторы начнут делиться контентом.',
+    text: 'Публикации из профилей, репостов и доступных сценариев публикации появятся здесь.',
   };
 }
 
@@ -221,6 +255,100 @@ function getPopularityScore(post) {
     + safeStat(post?.stats?.reposts)
     + safeStat(post?.stats?.saves)
   );
+}
+
+function getPostCreatedMs(post) {
+  const value = new Date(post?.created_at || post?.createdAt || 0).getTime();
+  return Number.isFinite(value) ? value : 0;
+}
+
+function getPostAuthorKey(post) {
+  return String(post?.author?.id || post?.authorId || post?.author_id || 'unknown');
+}
+
+function getPostHoursAge(post, now = Date.now()) {
+  const created = getPostCreatedMs(post);
+  if (!created) return 999;
+  return Math.max(0, (now - created) / 36e5);
+}
+
+function getFreshnessScore(post, now = Date.now()) {
+  const hours = getPostHoursAge(post, now);
+  if (hours <= 2) return 38;
+  if (hours <= 12) return 30;
+  if (hours <= 24) return 22;
+  if (hours <= 72) return 12;
+  if (hours <= 168) return 5;
+  return 0;
+}
+
+function getSocialWeight(post) {
+  const channel = getFeedSourceChannel(post);
+  if (channel === 'friends') return 18;
+  if (channel === 'following') return 12;
+  if (channel === 'communities') return 8;
+  return 4;
+}
+
+function getFeedPostScore(post, now = Date.now()) {
+  const stats = post?.stats || {};
+  return (
+    getFreshnessScore(post, now)
+    + getSocialWeight(post)
+    + safeStat(stats.plus) * 3
+    - safeStat(stats.minus) * 2
+    + safeStat(stats.comments) * 4
+    + safeStat(stats.saves) * 3
+    + safeStat(stats.reposts) * 2
+    + Math.min(safeStat(stats.views) * 0.03, 8)
+  );
+}
+
+function getFeedReasonLabel(post) {
+  const stats = post?.stats || {};
+  const channel = getFeedSourceChannel(post);
+  const hours = getPostHoursAge(post);
+  if (post?.repost_of) return 'друг поделился';
+  if (safeStat(stats.comments) >= 4) return 'обсуждают';
+  if (channel === 'friends' && safeStat(stats.plus) >= 2) return 'популярно у друзей';
+  if (safeStat(stats.saves) >= 3) return 'часто сохраняют';
+  if (postHasVideo(post)) return 'видеопост';
+  if (hours <= 6) return 'свежее';
+  if (channel === 'friends') return 'новое от друга';
+  if (channel === 'following') return 'новое от подписки';
+  if (channel === 'communities') return 'из сообщества';
+  return 'из открытой ленты';
+}
+
+function spreadRepeatedAuthors(posts) {
+  const queue = posts.slice();
+  const result = [];
+  let lastAuthor = '';
+
+  while (queue.length) {
+    let index = queue.findIndex((post) => getPostAuthorKey(post) !== lastAuthor);
+    if (index < 0) index = 0;
+    const [nextPost] = queue.splice(index, 1);
+    result.push(nextPost);
+    lastAuthor = getPostAuthorKey(nextPost);
+  }
+
+  return result;
+}
+
+function rankFeedPosts(posts, orderMode) {
+  const now = Date.now();
+  const sorted = posts.slice().sort((left, right) => {
+    if (getFeedOrderMode(orderMode) === 'popular') {
+      const scoreDiff = getFeedPostScore(right, now) - getFeedPostScore(left, now);
+      if (scoreDiff !== 0) return scoreDiff;
+      const popularityDiff = getPopularityScore(right) - getPopularityScore(left);
+      if (popularityDiff !== 0) return popularityDiff;
+    }
+    return getPostCreatedMs(right) - getPostCreatedMs(left);
+  });
+
+  return spreadRepeatedAuthors(sorted);
 }
 
 const VIDEO_EXTENSION_RE = /\.(mp4|webm|mov|m4v)(?:[?#].*)?$/i;
@@ -277,8 +405,469 @@ function postHasVideo(post, depth = 0) {
 }
 
 
-function FeedPost({ post, onOpenComments, onOpenProfile, onOpenCommunity, onVote, onToggleLike, onToggleSave, onReport, onShare, onEdit, onDelete, actionBusyKey }) {
-  const [expanded, setExpanded] = useState(false);
+function BaseBottomSheet({
+  open,
+  title,
+  subtitle,
+  onClose,
+  children,
+  footer = null,
+  className = '',
+  contentClassName = '',
+  sheetRef = null,
+  contentRef = null,
+  style = undefined,
+  onSheetClick,
+  dragHandlers = {},
+  titleId = 'feed-sheet-title',
+  closeLabel = 'Закрыть',
+  scope = 'page',
+  headStart = null,
+}) {
+  if (!open) return null;
+  const isPostScope = scope === 'post';
+  const stopNestedGesture = isPostScope ? ((event) => {
+    event.stopPropagation();
+  }) : undefined;
+
+  return (
+    <>
+      <div
+        className={`fsSheet-overlay open ${isPostScope ? 'fsSheet-overlayPost' : ''}`}
+        data-sheet-scope={scope}
+        data-feed-post-sheet={isPostScope ? 'overlay' : undefined}
+        onClick={(event) => { event.stopPropagation(); onClose?.(); }}
+        onPointerDownCapture={stopNestedGesture}
+        onPointerMoveCapture={stopNestedGesture}
+        onPointerUpCapture={stopNestedGesture}
+        onTouchStartCapture={stopNestedGesture}
+        onTouchMoveCapture={stopNestedGesture}
+        onTouchEndCapture={stopNestedGesture}
+        onMouseDownCapture={stopNestedGesture}
+        onMouseMoveCapture={stopNestedGesture}
+        onMouseUpCapture={stopNestedGesture}
+        onWheelCapture={stopNestedGesture}
+        onWheel={isPostScope ? undefined : ((event) => event.preventDefault())}
+        onTouchMove={isPostScope ? undefined : ((event) => event.preventDefault())}
+      />
+      <section
+        ref={sheetRef}
+        className={`fsSheet open ${isPostScope ? 'fsSheet-post' : ''} ${className}`}
+        role="dialog"
+        aria-modal={isPostScope ? 'false' : 'true'}
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        style={style}
+        data-sheet-scope={scope}
+        data-feed-post-sheet={isPostScope ? 'sheet' : undefined}
+        onPointerDownCapture={stopNestedGesture}
+        onPointerMoveCapture={stopNestedGesture}
+        onPointerUpCapture={stopNestedGesture}
+        onTouchStartCapture={stopNestedGesture}
+        onTouchMoveCapture={stopNestedGesture}
+        onTouchEndCapture={stopNestedGesture}
+        onMouseDownCapture={stopNestedGesture}
+        onMouseMoveCapture={stopNestedGesture}
+        onMouseUpCapture={stopNestedGesture}
+        onWheelCapture={stopNestedGesture}
+        onClick={onSheetClick || ((event) => event.stopPropagation())}
+      >
+        <div className="fsSheet-dragZone" {...dragHandlers}>
+          <div className="fsSheet-handle" aria-hidden="true" />
+          <div className="fsSheet-head">
+            {headStart ? <div className="fsSheet-headStart">{headStart}</div> : null}
+            <div className="fsSheet-titleBlock">
+              <div className="fsSheet-title" id={titleId}>{title}</div>
+              {subtitle ? <div className="fsSheet-subtitle">{subtitle}</div> : null}
+            </div>
+            <button className="fsSheet-closeBtn" type="button" onClick={onClose} aria-label={closeLabel}>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12"></path><path d="M18 6 6 18"></path></svg>
+            </button>
+          </div>
+        </div>
+        <div ref={contentRef} className={`fsSheet-content ${contentClassName}`}>
+          {children}
+        </div>
+        {footer ? <div className="fsSheet-footer">{footer}</div> : null}
+      </section>
+    </>
+  );
+}
+
+function PostTextSheet({ post, onClose }) {
+  const text = String(post?.text || '').trim();
+  const author = post?.author ? formatName(post.author) : 'Публикация';
+  const meta = post?.created_at ? formatTime(post.created_at) : '';
+
+  return (
+    <BaseBottomSheet
+      open={Boolean(post && text)}
+      title={author}
+      subtitle={meta}
+      onClose={onClose}
+      className="postTextSheet"
+      contentClassName="postTextSheet-content feedV10-sheetScroll"
+      scope="post"
+      titleId="post-text-sheet-title"
+    >
+      <article className="postTextSheet-body">{text}</article>
+    </BaseBottomSheet>
+  );
+}
+
+
+function getSharePreviewText(post) {
+  const text = String(post?.text || '').trim();
+  if (text && text !== 'Медиа') return text;
+  const originalText = String(post?.repost_of?.text || '').trim();
+  if (originalText && originalText !== 'Медиа') return originalText;
+  const media = Array.isArray(post?.payload?.media) ? post.payload.media : [];
+  return media.length ? 'Публикация с медиа' : 'Публикация Friendscape';
+}
+
+function getSharePreviewAuthor(post) {
+  return formatName(post?.author || post?.repost_of?.author || {});
+}
+
+function getPostShareUrl(post) {
+  if (typeof window === 'undefined') return '';
+  const postId = Number(post?.repost_of?.id || post?.id || 0);
+  return `${window.location.origin}/feed${postId ? `?post=${postId}` : ''}`;
+}
+
+async function getCsrfHeaders() {
+  try {
+    const response = await fetch('/api/auth/csrf', { cache: 'no-store' });
+    const data = await response.json().catch(() => ({}));
+    const token = String(data?.csrfToken || '');
+    return token ? { 'x-csrf-token': token } : {};
+  } catch {
+    return {};
+  }
+}
+
+function RepostSheet({ post, onClose, onRepostResult, onChatShareResult, onSaveToggle }) {
+  const [mode, setMode] = useState('actions');
+  const [comment, setComment] = useState('');
+  const [visibility, setVisibility] = useState('public');
+  const [chatQuery, setChatQuery] = useState('');
+  const [chats, setChats] = useState([]);
+  const [chatsLoading, setChatsLoading] = useState(false);
+  const [selectedChatIds, setSelectedChatIds] = useState([]);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState('');
+  const [note, setNote] = useState('');
+
+  const previewText = useMemo(() => getSharePreviewText(post).slice(0, 180), [post]);
+  const previewAuthor = useMemo(() => getSharePreviewAuthor(post), [post]);
+
+  useEffect(() => {
+    if (!post) return;
+    setMode('actions');
+    setComment('');
+    setVisibility('public');
+    setChatQuery('');
+    setChats([]);
+    setSelectedChatIds([]);
+    setError('');
+    setNote('');
+    setSending(false);
+  }, [post?.id]);
+
+  useEffect(() => {
+    if (!post || mode !== 'chatPicker') return undefined;
+    let cancelled = false;
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      try {
+        setChatsLoading(true);
+        setError('');
+        const params = new URLSearchParams({ limit: '30', scope: 'active' });
+        const query = String(chatQuery || '').trim();
+        if (query) params.set('q', query);
+        const response = await fetch(`/api/chats?${params.toString()}`, { cache: 'no-store', signal: controller.signal });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || 'Не удалось загрузить чаты.');
+        if (!cancelled) setChats(Array.isArray(data.items) ? data.items : []);
+      } catch (loadError) {
+        if (cancelled || loadError?.name === 'AbortError') return;
+        setChats([]);
+        setError(loadError.message || 'Не удалось загрузить чаты.');
+      } finally {
+        if (!cancelled) setChatsLoading(false);
+      }
+    }, 160);
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [chatQuery, mode, post]);
+
+  const toggleChat = useCallback((chatId) => {
+    const id = String(chatId || '').trim();
+    if (!id) return;
+    setSelectedChatIds((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
+  }, []);
+
+  const copyLink = useCallback(async () => {
+    if (!post) return;
+    try {
+      await navigator.clipboard.writeText(getPostShareUrl(post));
+      setNote('Ссылка скопирована');
+      window.setTimeout(() => setNote(''), 1400);
+    } catch {
+      setError('Не удалось скопировать ссылку.');
+    }
+  }, [post]);
+
+  const publishRepost = useCallback(async () => {
+    if (!post) return;
+    try {
+      setSending(true);
+      setError('');
+      const headers = { 'Content-Type': 'application/json', ...(await getCsrfHeaders()) };
+      const response = await fetch(`/api/posts/${post.id}/repost`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ targetType: 'profile', targetId: null, comment, visibility }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Не удалось сделать репост.');
+      onRepostResult?.(data, { targetType: 'profile' });
+      if (data?.already_exists) {
+        setNote('Этот репост уже есть в профиле.');
+        return;
+      }
+      onClose?.();
+    } catch (submitError) {
+      setError(submitError.message || 'Не удалось сделать репост.');
+    } finally {
+      setSending(false);
+    }
+  }, [comment, onClose, onRepostResult, post, visibility]);
+
+  const sendToChats = useCallback(async () => {
+    if (!post) return;
+    if (!selectedChatIds.length) {
+      setError('Выберите хотя бы один чат.');
+      return;
+    }
+    try {
+      setSending(true);
+      setError('');
+      const headers = { 'Content-Type': 'application/json', ...(await getCsrfHeaders()) };
+      const response = await fetch(`/api/feed/posts/${post.id}/share`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ conversationIds: selectedChatIds, comment }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Не удалось отправить публикацию.');
+      onChatShareResult?.(data, { chatIds: selectedChatIds });
+      onClose?.();
+    } catch (sendError) {
+      setError(sendError.message || 'Не удалось отправить публикацию.');
+    } finally {
+      setSending(false);
+    }
+  }, [comment, onChatShareResult, onClose, post, selectedChatIds]);
+
+  const openChatPicker = useCallback(() => {
+    setMode('chatPicker');
+    setError('');
+    setNote('');
+  }, []);
+
+  const handleSave = useCallback(() => {
+    onSaveToggle?.(post?.id);
+    onClose?.();
+  }, [onClose, onSaveToggle, post?.id]);
+
+  const chatEmptyText = chatQuery.trim() ? 'Чаты не найдены.' : 'Нет доступных чатов.';
+  const sheetTitle = mode === 'chatPicker' ? 'Отправить в чат' : 'Поделиться';
+  const sheetSubtitle = mode === 'chatPicker'
+    ? (selectedChatIds.length ? `${selectedChatIds.length} выбрано` : 'Выберите чат для отправки')
+    : 'Репост, чат или ссылка';
+
+  return (
+    <BaseBottomSheet
+      open={Boolean(post)}
+      title={sheetTitle}
+      subtitle={sheetSubtitle}
+      onClose={onClose}
+      className={`feedV7-shareSheet feedV9-shareSheet ${mode === 'chatPicker' ? 'is-chatPicker' : 'is-actions'}`}
+      contentClassName={`feedV7-shareContent feedV9-shareContent feedV10-sheetScroll ${mode === 'chatPicker' ? 'feedV9-shareContentChat feedV10-shareContentChat' : ''}`}
+      scope="post"
+      titleId="feed-share-title"
+      headStart={mode === 'chatPicker' ? (
+        <button
+          type="button"
+          className="feedV9-sheetBackBtn"
+          aria-label="Назад к вариантам репоста"
+          onClick={() => { setMode('actions'); setError(''); setNote(''); }}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18 9 12l6-6"></path></svg>
+        </button>
+      ) : null}
+      footer={mode === 'chatPicker' ? (
+        <div className="feedV9-chatPickerFooter feedV10-chatPickerFooter">
+          <div className="feedV10-chatFooterMeta" aria-live="polite">
+            {selectedChatIds.length ? `${selectedChatIds.length} ${getCountWord(selectedChatIds.length, ['чат выбран', 'чата выбрано', 'чатов выбрано'])}` : 'Выберите чат'}
+          </div>
+          <div className="feedV10-chatFooterRow">
+            <textarea
+              className="feedV9-chatMessage"
+              value={comment}
+              maxLength={420}
+              rows={1}
+              placeholder="Сообщение к публикации"
+              onChange={(event) => setComment(event.target.value)}
+            />
+            <button
+              type="button"
+              className="feedV9-chatSendBtn"
+              disabled={sending || !selectedChatIds.length}
+              onClick={sendToChats}
+              aria-label={sending ? 'Отправляем публикацию' : 'Отправить в выбранные чаты'}
+            >
+              {sending ? (
+                <span className="feedV7-shareSpinner" aria-hidden="true" />
+              ) : (
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2 11 13"></path><path d="m22 2-7 20-4-9-9-4 20-7z"></path></svg>
+              )}
+            </button>
+          </div>
+        </div>
+      ) : null}
+    >
+      {mode === 'actions' ? (
+        <>
+          <div className="feedV7-sharePreview feedV9-sharePreview">
+            <div className="feedV7-sharePreviewIcon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M4 12v7a1 1 0 0 0 1 1h14"></path><path d="M16 6l4 4-4 4"></path><path d="M20 10H9a5 5 0 0 0-5 5"></path></svg>
+            </div>
+            <div className="feedV7-sharePreviewMain">
+              <div className="feedV7-sharePreviewAuthor">{previewAuthor}</div>
+              <div className="feedV7-sharePreviewText">{previewText}</div>
+            </div>
+          </div>
+
+          <label className="feedV7-shareField feedV9-shareComment">
+            <span>Комментарий к репосту</span>
+            <textarea
+              value={comment}
+              maxLength={420}
+              placeholder="Можно добавить пару слов"
+              onChange={(event) => setComment(event.target.value)}
+            />
+          </label>
+
+          <div className="feedV9-shareActions" aria-label="Варианты репоста">
+            <button type="button" className="feedV9-shareActionBtn" disabled={sending} onClick={publishRepost}>
+              <span className="feedV9-shareActionIcon" aria-hidden="true">
+                {sending ? (
+                  <span className="feedV7-shareSpinner" aria-hidden="true" />
+                ) : (
+                  <svg viewBox="0 0 24 24"><path d="M4 12v7a1 1 0 0 0 1 1h14"></path><path d="M16 6l4 4-4 4"></path><path d="M20 10H9a5 5 0 0 0-5 5"></path></svg>
+                )}
+              </span>
+              <span>
+                <strong>В профиль</strong>
+                <small>Опубликовать репост у себя</small>
+              </span>
+            </button>
+            <button type="button" className="feedV9-shareActionBtn" onClick={openChatPicker}>
+              <span className="feedV9-shareActionIcon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path></svg>
+              </span>
+              <span>
+                <strong>В чат</strong>
+                <small>Выбрать один или несколько чатов</small>
+              </span>
+            </button>
+            <button type="button" className="feedV9-shareActionBtn" onClick={copyLink}>
+              <span className="feedV9-shareActionIcon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.07 0l2.12-2.12a5 5 0 0 0-7.07-7.07L11 4.93"></path><path d="M14 11a5 5 0 0 0-7.07 0L4.81 13.12a5 5 0 0 0 7.07 7.07L13 19.07"></path></svg>
+              </span>
+              <span>
+                <strong>Копировать ссылку</strong>
+                <small>{note || 'Ссылка на оригинальный пост'}</small>
+              </span>
+            </button>
+            <button type="button" className="feedV9-shareActionBtn" onClick={handleSave}>
+              <span className="feedV9-shareActionIcon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M19 21 12 17 5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+              </span>
+              <span>
+                <strong>{post?.is_saved ? 'Убрать из сохранённого' : 'Сохранить'}</strong>
+                <small>{post?.is_saved ? 'Удалить из сохранённых' : 'Вернуться к посту позже'}</small>
+              </span>
+            </button>
+          </div>
+
+          <div className="feedV7-shareVisibility" aria-label="Видимость репоста">
+            {[
+              ['public', 'Все'],
+              ['friends', 'Друзья'],
+              ['private', 'Только я'],
+            ].map(([key, label]) => (
+              <button key={key} type="button" className={`feedV7-sharePill ${visibility === key ? 'is-active' : ''}`} onClick={() => setVisibility(key)}>
+                {label}
+              </button>
+            ))}
+          </div>
+        </>
+      ) : (
+        <div className="feedV9-chatPicker">
+          <label className="feedV7-shareSearch feedV9-chatSearch">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+            <input value={chatQuery} onChange={(event) => setChatQuery(event.target.value)} placeholder="Найти чат" />
+          </label>
+
+          <div className="feedV9-chatList feedV10-sheetScroll" role="list" aria-label="Чаты для отправки">
+            {chatsLoading ? (
+              <div className="feedV9-chatEmpty" role="status">Загружаем чаты…</div>
+            ) : chats.length ? chats.map((chat) => {
+              const selected = selectedChatIds.includes(String(chat.id));
+              return (
+                <button
+                  key={chat.id}
+                  type="button"
+                  role="listitem"
+                  className={`feedV9-chatItem ${selected ? 'is-selected' : ''}`}
+                  onClick={() => toggleChat(chat.id)}
+                  aria-pressed={selected}
+                >
+                  <span className="feedV9-chatAvatar">{chat.initials || String(chat.name || '?').slice(0, 2)}</span>
+                  <span className="feedV9-chatMain">
+                    <strong>{chat.name || 'Чат'}</strong>
+                    <small>{chat.preview || chat.status || 'Можно отправить публикацию'}</small>
+                  </span>
+                  <span className="feedV9-chatCheck" aria-hidden="true">
+                    {selected ? (
+                      <svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"></path></svg>
+                    ) : (
+                      <svg viewBox="0 0 24 24"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+                    )}
+                  </span>
+                </button>
+              );
+            }) : (
+              <div className="feedV9-chatEmpty" role="status">{chatEmptyText}</div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {error ? <div className="feedV7-shareError" role="alert">{error}</div> : null}
+      {note && mode !== 'actions' ? <div className="feedV7-shareStatus" role="status">{note}</div> : null}
+    </BaseBottomSheet>
+  );
+}
+
+function FeedPost({ post, sheetSlot = null, saveFeedbackLabel = '', onOpenComments, onOpenFullText, onOpenProfile, onOpenCommunity, onVote, onToggleLike, onToggleSave, onReport, onShare, onEdit, onDelete, actionBusyKey }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
   const payload = post.payload || {};
@@ -290,6 +879,11 @@ function FeedPost({ post, onOpenComments, onOpenProfile, onOpenCommunity, onVote
     return value;
   })();
   const authorMeta = payload.meta || `${isRepost ? 'репостнул · ' : ''}${formatTime(post.created_at)}${post.location ? ` · ${post.location}` : ''}`;
+  const feedReason = getFeedReasonLabel(post);
+  const previewComment = useMemo(() => {
+    const list = Array.isArray(post?.comments) ? post.comments : [];
+    return list.find((comment) => isCommentVisible(comment) && String(comment?.text || '').trim()) || null;
+  }, [post?.comments]);
   const hasVideo = postHasVideo(post);
   const hasGallery = post.type === 'gallery' && Array.isArray(payload.slides);
   const hasLink = post.type === 'link';
@@ -308,7 +902,7 @@ function FeedPost({ post, onOpenComments, onOpenProfile, onOpenCommunity, onVote
   ].filter(Boolean).join(' ');
 
   return (
-    <article className={`feed-post-card feed-page-card fsPost-card feedV2-card ${isRepost ? 'fsPost-card-repost' : ''} ${typeClassName}`} onClick={() => menuOpen && setMenuOpen(false)}>
+    <article className={`feed-post-card feed-page-card fsPost-card feedV2-card ${sheetSlot ? 'feedV2-card-hasSheet feedV10-card-hasSheet' : ''} ${isRepost ? 'fsPost-card-repost' : ''} ${typeClassName}`} data-has-active-sheet={sheetSlot ? 'true' : undefined} onClick={() => menuOpen && setMenuOpen(false)}>
       <div className="feed-post-header">
         <button
           type="button"
@@ -351,14 +945,6 @@ function FeedPost({ post, onOpenComments, onOpenProfile, onOpenCommunity, onVote
         </button>
       ) : null}
 
-      {postText ? (
-        <div className="feed-post-text-wrap">
-          <div className={`feed-post-text ${expanded ? '' : 'collapsed'}`}>{postText}</div>
-          {postText.length > 140 ? (
-            <button className="feed-post-more-btn" type="button" onClick={() => setExpanded((v) => !v)}>{expanded ? 'Скрыть' : 'Ещё'}</button>
-          ) : null}
-        </div>
-      ) : null}
 
       {post.type === 'gallery' && Array.isArray(payload.slides) && (
         <div className="feed-post-content-block feed-post-gallery is-active">
@@ -425,48 +1011,79 @@ function FeedPost({ post, onOpenComments, onOpenProfile, onOpenCommunity, onVote
       )}
 
       {(post.repost_of || post.type === 'repost') ? (
-        <div className="feed-post-content-block fsPost-repostBlock is-active">
+        <div className="feed-post-content-block fsPost-repostBlock feedV7-repostBlock is-active">
+          <div className="feedV7-repostIntro">
+            <span className="feedV7-repostLabel">{formatName(post.author)} поделился публикацией</span>
+            {post.repost_of?.author ? <span className="feedV7-repostSource">оригинал · {formatName(post.repost_of.author)}</span> : null}
+          </div>
           <PostRepostPreview post={post.repost_of} />
         </div>
       ) : null}
 
+      {postText ? (
+        <button
+          className="feed-post-text-wrap feed-post-textButton"
+          type="button"
+          onClick={() => onOpenFullText?.(post)}
+          aria-label="Открыть полный текст поста"
+        >
+          <span className="feed-post-text collapsed">{postText}</span>
+        </button>
+      ) : null}
 
-      <div className="feed-post-footer feed-post-footerVk fsPost-footer">
-        <div className="feed-post-actionRow fsPost-actionRow" aria-label="Действия с постом">
-          <button
-            className={`feed-post-actionBtn is-plus ${post.current_vote === 1 ? 'is-active' : ''}`}
-            type="button"
-            aria-label="Поставить плюс"
-            disabled={actionBusyKey === `vote:${post.id}` || actionBusyKey === `like:${post.id}`}
-            onClick={() => onVote(post.id, post.current_vote === 1 ? 0 : 1)}
-          >
-            <svg viewBox="0 0 24 24"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
-            <span>{safeStat(post?.stats?.plus)}</span>
-          </button>
-          <button
-            className={`feed-post-actionBtn is-minus ${post.current_vote === -1 ? 'is-active' : ''}`}
-            type="button"
-            aria-label="Поставить минус"
-            disabled={actionBusyKey === `vote:${post.id}` || actionBusyKey === `like:${post.id}`}
-            onClick={() => onVote(post.id, post.current_vote === -1 ? 0 : -1)}
-          >
-            <svg viewBox="0 0 24 24"><path d="M5 12h14"></path></svg>
-            <span>{safeStat(post?.stats?.minus)}</span>
-          </button>
-          <button className="feed-post-actionBtn" type="button" aria-label="Открыть комментарии" onClick={() => onOpenComments(post.id)}>
-            <svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-8 8H7l-4 3v-6.2A7.9 7.9 0 0 1 5 4.7 8.5 8.5 0 0 1 13 4a8 8 0 0 1 8 8z"></path></svg>
-            <span>{safeStat(post?.stats?.comments)}</span>
-          </button>
-          <button className="feed-post-actionBtn" type="button" aria-label="Поделиться" onClick={() => onShare?.(post, 'sheet')}>
-            <svg viewBox="0 0 24 24"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"></path><path d="M16 6l-4-4-4 4"></path><path d="M12 2v13"></path></svg>
-            <span>{safeStat(post?.stats?.reposts)}</span>
-          </button>
-          <button className={`feed-post-actionBtn ${post.is_saved ? 'is-active' : ''}`} type="button" aria-label="Сохранить" disabled={actionBusyKey === `save:${post.id}`} onClick={() => onToggleSave?.(post.id)}>
-            <svg viewBox="0 0 24 24"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"></path></svg>
-            <span>{safeStat(post?.stats?.saves)}</span>
-          </button>
+      <div className="feed-post-footer feed-post-footerVk fsPost-footer feedCardV2-footer">
+        <div className="feedCardV2-actions" aria-label="Действия с постом">
+          <div className="feedCardV2-voteGroup" aria-label="Оценка поста">
+            <button
+              className={`feed-post-actionBtn feedCardV2-voteBtn is-plus ${post.current_vote === 1 ? 'is-active' : ''}`}
+              type="button"
+              aria-label="Поставить плюс"
+              disabled={actionBusyKey === `vote:${post.id}` || actionBusyKey === `like:${post.id}`}
+              onClick={() => onVote(post.id, post.current_vote === 1 ? 0 : 1)}
+            >
+              <svg viewBox="0 0 24 24"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+              <span>{safeStat(post?.stats?.plus)}</span>
+            </button>
+            <button
+              className={`feed-post-actionBtn feedCardV2-voteBtn is-minus ${post.current_vote === -1 ? 'is-active' : ''}`}
+              type="button"
+              aria-label="Поставить минус"
+              disabled={actionBusyKey === `vote:${post.id}` || actionBusyKey === `like:${post.id}`}
+              onClick={() => onVote(post.id, post.current_vote === -1 ? 0 : -1)}
+            >
+              <svg viewBox="0 0 24 24"><path d="M5 12h14"></path></svg>
+              <span>{safeStat(post?.stats?.minus)}</span>
+            </button>
+          </div>
+          <div className="feedCardV2-socialGroup">
+            <button className="feed-post-actionBtn feedCardV2-socialBtn" type="button" aria-label="Открыть комментарии" onClick={() => onOpenComments(post.id)}>
+              <svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-8 8H7l-4 3v-6.2A7.9 7.9 0 0 1 5 4.7 8.5 8.5 0 0 1 13 4a8 8 0 0 1 8 8z"></path></svg>
+              <span>{safeStat(post?.stats?.comments)}</span>
+            </button>
+            <button className="feed-post-actionBtn feedCardV2-socialBtn" type="button" aria-label="Поделиться" onClick={() => onShare?.(post, 'sheet')}>
+              <svg viewBox="0 0 24 24"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"></path><path d="M16 6l-4-4-4 4"></path><path d="M12 2v13"></path></svg>
+              <span>{safeStat(post?.stats?.reposts)}</span>
+            </button>
+            <button className={`feed-post-actionBtn feedCardV2-socialBtn feedV7-saveBtn ${post.is_saved ? 'is-active' : ''} ${saveFeedbackLabel ? 'is-feedback' : ''}`} type="button" aria-label={post.is_saved ? 'Убрать из сохранённого' : 'Сохранить'} disabled={actionBusyKey === `save:${post.id}`} onClick={() => onToggleSave?.(post.id)}>
+              <svg viewBox="0 0 24 24"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"></path></svg>
+              <span>{saveFeedbackLabel || safeStat(post?.stats?.saves)}</span>
+            </button>
+          </div>
+        </div>
+        <div className="feedCardV2-metaLine" aria-label="Информация о посте">
+          <span>{formatTime(post.created_at)}</span>
+          <span>{safeStat(post?.stats?.views)} просмотров</span>
+          {feedReason ? <span className="feedCardV2-reason">{feedReason}</span> : null}
+          {post.community ? <span>{post.community.name}</span> : null}
         </div>
       </div>
+      {previewComment ? (
+        <button className="feedV2-commentPreview" type="button" onClick={() => onOpenComments(post.id)}>
+          <span className="feedV2-commentPreviewText"><strong>{formatCommentAuthorName(previewComment.author)}:</strong> {getCollapsedCommentText(previewComment.text)}</span>
+          <span className="feedV2-commentPreviewMore">Показать комментарии · {safeStat(post?.stats?.comments)}</span>
+        </button>
+      ) : null}
+      {sheetSlot}
     </article>
   );
 }
@@ -482,6 +1099,7 @@ export default function FeedPage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
   const [posts, setPosts] = useState([]);
+  const [fullTextPost, setFullTextPost] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [infoMessage, setInfoMessage] = useState('');
@@ -498,6 +1116,12 @@ export default function FeedPage() {
   const [visibleCommentRoots, setVisibleCommentRoots] = useState(6);
   const [busy, setBusy] = useState('');
   const [shareSheetPost, setShareSheetPost] = useState(null);
+  const [saveFeedback, setSaveFeedback] = useState(null);
+  const [toast, setToast] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
+  const toastTimerRef = useRef(null);
+  const postsRef = useRef([]);
   const feedListRef = useRef(null);
   const feedSettingsSheetRef = useRef(null);
   const feedListScrollTopRef = useRef(0);
@@ -517,6 +1141,18 @@ export default function FeedPage() {
         ? 'Черновик сохранён'
         : '';
 
+  const isPostSheetOpen = Boolean(commentPostId || fullTextPost || shareSheetPost);
+  const activePostSheetKind = commentPostId ? 'comments' : fullTextPost ? 'text' : shareSheetPost ? 'repost' : '';
+
+  const guardFeedGestureWhileSheetOpen = useCallback((event) => {
+    if (!isPostSheetOpen) return;
+    const target = event.target;
+    const isInsideActiveSheet = Boolean(target?.closest?.('.fsSheet-post, .fsSheet-overlayPost'));
+    if (isInsideActiveSheet) return;
+    event.stopPropagation();
+    if (event.cancelable) event.preventDefault();
+  }, [isPostSheetOpen]);
+
   const openProfile = useCallback((author) => {
     const authorId = Number(author?.id || 0);
     if (!authorId) return;
@@ -529,6 +1165,34 @@ export default function FeedPage() {
     if (!slug) return;
     router.push(`/communities/${slug}?from=feed`);
   }, [router]);
+
+  const showToast = useCallback((message, tone = 'info') => {
+    const nextMessage = String(message || '').trim();
+    if (!nextMessage) return;
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    setToast({ id: Date.now(), message: nextMessage, tone });
+    toastTimerRef.current = window.setTimeout(() => setToast(null), 2800);
+  }, []);
+
+  useEffect(() => () => {
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+  }, []);
+
+  useEffect(() => {
+    postsRef.current = posts;
+  }, [posts]);
+
+  useEffect(() => {
+    const updateOnlineState = () => setIsOffline(isClientOffline());
+    updateOnlineState();
+    window.addEventListener('online', updateOnlineState);
+    window.addEventListener('offline', updateOnlineState);
+    return () => {
+      window.removeEventListener('online', updateOnlineState);
+      window.removeEventListener('offline', updateOnlineState);
+    };
+  }, []);
+
   const closeShareSheet = useCallback(() => {
     setShareSheetPost(null);
   }, []);
@@ -545,6 +1209,7 @@ export default function FeedPage() {
 
   const openShareSheet = useCallback((post) => {
     if (!post) return;
+    setFullTextPost(null);
     setShareSheetPost(post);
     setInfoMessage('');
     setError('');
@@ -606,9 +1271,23 @@ export default function FeedPage() {
 
   const availableTabs = useMemo(() => getAvailableTabs(feedSettings), [feedSettings]);
 
-  const loadFeed = useCallback(async ({ silent = false } = {}) => {
+  const loadFeed = useCallback(async ({ silent = false, feedback = false } = {}) => {
+    const offlineMessage = 'Нет соединения. Показываем уже загруженную ленту.';
+    if (isClientOffline()) {
+      setIsOffline(true);
+      if (postsRef.current.length) {
+        setError('');
+        showToast(offlineMessage, 'warning');
+        return;
+      }
+      setError('Нет соединения. Попробуйте обновить ленту позже.');
+      setLoading(false);
+      return;
+    }
+
     try {
       if (!silent) setLoading(true);
+      if (silent) setRefreshing(true);
       setError('');
       const response = await fetch('/api/feed', { cache: 'no-store' });
       const data = await response.json();
@@ -622,14 +1301,21 @@ export default function FeedPage() {
         if (tabs.includes(prev)) return prev;
         return tabs.includes(nextSettings.default_tab) ? nextSettings.default_tab : tabs[0];
       });
+      if (feedback) showToast('Лента обновлена.', 'success');
     } catch (loadError) {
       console.warn('feed load fallback enabled', loadError?.message || loadError);
-      setError('');
-      setPosts([]);
+      const message = 'Не удалось обновить ленту. Проверьте подключение и попробуйте снова.';
+      if (postsRef.current.length) {
+        setError('');
+        showToast(message, 'warning');
+      } else {
+        setError(message);
+      }
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-  }, []);
+  }, [showToast]);
 
   useEffect(() => {
     const hasWarmCache = Boolean(initialCacheRef.current);
@@ -670,7 +1356,17 @@ export default function FeedPage() {
   }, [contentMode]);
 
   useEffect(() => {
-    const hasOverlayOpen = Boolean(settingsOpen || commentPostId || shareSheetPost);
+    const activeClass = 'feedV10-hasPostSheet';
+    document.documentElement.classList.toggle(activeClass, isPostSheetOpen);
+    document.body.classList.toggle(activeClass, isPostSheetOpen);
+    return () => {
+      document.documentElement.classList.remove(activeClass);
+      document.body.classList.remove(activeClass);
+    };
+  }, [isPostSheetOpen]);
+
+  useEffect(() => {
+    const hasOverlayOpen = Boolean(settingsOpen);
     const previousBodyOverflow = document.body.style.overflow;
     const previousBodyTouchAction = document.body.style.touchAction;
     const previousRootOverscroll = document.documentElement.style.overscrollBehavior;
@@ -684,11 +1380,11 @@ export default function FeedPage() {
       document.body.style.touchAction = previousBodyTouchAction;
       document.documentElement.style.overscrollBehavior = previousRootOverscroll;
     };
-  }, [commentPostId, settingsOpen, shareSheetPost]);
+  }, [settingsOpen]);
 
   useEffect(() => {
     const node = feedListRef.current;
-    const hasBlockingSheet = Boolean(settingsOpen || commentPostId || shareSheetPost);
+    const hasBlockingSheet = Boolean(settingsOpen || isPostSheetOpen);
     if (!node || !hasBlockingSheet) return undefined;
     feedListScrollTopRef.current = node.scrollTop;
     const previousOverflowY = node.style.overflowY;
@@ -697,9 +1393,9 @@ export default function FeedPage() {
     const previousScrollSnapType = node.style.scrollSnapType;
     node.style.overflowY = 'hidden';
     node.style.overscrollBehavior = 'none';
-    node.style.touchAction = 'none';
+    node.style.touchAction = settingsOpen ? 'none' : '';
     node.style.scrollSnapType = 'none';
-    node.dataset.feedOverlayLocked = 'true';
+    node.dataset.feedOverlayLocked = isPostSheetOpen ? 'post' : 'page';
     return () => {
       node.style.overflowY = previousOverflowY;
       node.style.overscrollBehavior = previousOverscrollBehavior;
@@ -708,7 +1404,7 @@ export default function FeedPage() {
       node.scrollTop = feedListScrollTopRef.current;
       delete node.dataset.feedOverlayLocked;
     };
-  }, [commentPostId, settingsOpen, shareSheetPost]);
+  }, [settingsOpen, isPostSheetOpen]);
 
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -721,27 +1417,34 @@ export default function FeedPage() {
         setCommentPostId(null);
         return;
       }
+      if (fullTextPost) {
+        setFullTextPost(null);
+        return;
+      }
       if (settingsOpen) {
         closeFeedSettings();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [closeFeedSettings, closeShareSheet, commentPostId, settingsOpen, shareSheetPost]);
+  }, [closeFeedSettings, closeShareSheet, commentPostId, fullTextPost, settingsOpen, shareSheetPost]);
 
   useEffect(() => {
+    if (fullTextPost) setFullTextPost(null);
+    if (shareSheetPost) closeShareSheet();
     if (!commentPostId) return;
     setCommentPostId(null);
     setCommentText('');
     setCommentReplyTarget(null);
     setCommentMenuId(null);
-  }, [activeChip, contentMode, search]);
+  }, [activeChip, closeShareSheet, contentMode, search]);
 
   useEffect(() => {
     if (!settingsOpen) return;
     if (commentPostId) setCommentPostId(null);
+    if (fullTextPost) setFullTextPost(null);
     if (shareSheetPost) closeShareSheet();
-  }, [closeShareSheet, commentPostId, settingsOpen, shareSheetPost]);
+  }, [closeShareSheet, commentPostId, fullTextPost, settingsOpen, shareSheetPost]);
 
   useEffect(() => {
     if (!settingsOpen) return;
@@ -958,15 +1661,7 @@ export default function FeedPage() {
       return haystack.includes(q);
     });
 
-    const sorted = filtered.slice().sort((left, right) => {
-      if (getFeedOrderMode(feedSettings.sort_mode) === 'popular') {
-        const diff = getPopularityScore(right) - getPopularityScore(left);
-        if (diff !== 0) return diff;
-      }
-      return new Date(right.created_at).getTime() - new Date(left.created_at).getTime();
-    });
-
-    return sorted;
+    return rankFeedPosts(filtered, feedSettings.sort_mode);
   }, [contentMode, feedSettings.sort_mode, search, sourcePosts]);
 
   const emptyState = useMemo(() => {
@@ -995,7 +1690,7 @@ export default function FeedPage() {
       return {
         kicker: `Все · ${orderLabel}`,
         title: 'Лента пуста',
-        text: 'Публикации появятся здесь, когда авторы начнут делиться контентом.',
+        text: 'Публикации из профилей, репостов и доступных сценариев публикации появятся здесь.',
         actions: [
           { id: 'reload', label: 'Обновить' },
           { id: 'settings', label: 'Настроить', ghost: true },
@@ -1092,8 +1787,16 @@ export default function FeedPage() {
   };
 
   const handleVote = async (postId, value) => {
+    if (busy === `vote:${postId}`) return;
+    const previousPost = postsRef.current.find((post) => Number(post.id) === Number(postId));
+    if (isClientOffline()) {
+      showToast('Нет соединения. Голос не отправлен.', 'warning');
+      return;
+    }
     try {
       setBusy(`vote:${postId}`);
+      setError('');
+      if (previousPost) patchPostSnapshot(postId, patchPostVoteState(previousPost, value));
       const response = await fetch(`/api/feed/posts/${postId}/vote`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1103,30 +1806,54 @@ export default function FeedPage() {
       if (!response.ok) throw new Error(data.error || 'Не удалось обновить голос.');
       patchPostSnapshot(postId, data.post);
     } catch (voteError) {
-      setError(voteError.message || 'Не удалось обновить голос.');
+      if (previousPost) patchPostSnapshot(postId, previousPost);
+      showToast(voteError.message || 'Не удалось обновить голос.', 'warning');
     } finally {
       setBusy('');
     }
   };
 
   const handleToggleSave = async (postId) => {
+    if (busy === `save:${postId}`) return;
+    const previousPost = postsRef.current.find((post) => Number(post.id) === Number(postId));
+    if (isClientOffline()) {
+      showToast('Нет соединения. Сохранение не обновлено.', 'warning');
+      return;
+    }
     try {
       setBusy(`save:${postId}`);
+      setError('');
+      const optimisticPost = previousPost ? patchPostSaveState(previousPost) : null;
+      if (optimisticPost) patchPostSnapshot(postId, optimisticPost);
       const response = await fetch(`/api/feed/posts/${postId}/save`, { method: 'POST' });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Не удалось обновить сохранение.');
       patchPostSnapshot(postId, data.post);
+      const saved = Boolean(data?.post?.is_saved);
+      const label = saved ? 'Сохранено' : 'Убрано';
+      setSaveFeedback({ postId, label });
+      showToast(saved ? 'Пост сохранён.' : 'Пост убран из сохранённого.', 'success');
+      window.setTimeout(() => {
+        setSaveFeedback((prev) => (Number(prev?.postId || 0) === Number(postId) ? null : prev));
+      }, 1400);
     } catch (saveError) {
-      setError(saveError.message || 'Не удалось обновить сохранение.');
+      if (previousPost) patchPostSnapshot(postId, previousPost);
+      showToast(saveError.message || 'Не удалось обновить сохранение.', 'warning');
     } finally {
       setBusy('');
     }
   };
 
   const handleToggleLike = async (post) => {
+    if (!post?.id || busy === `like:${post.id}`) return;
     const isLiked = Boolean(post?.is_liked);
+    if (isClientOffline()) {
+      showToast('Нет соединения. Действие не отправлено.', 'warning');
+      return;
+    }
     try {
       setBusy(`like:${post.id}`);
+      setError('');
       const response = await fetch(`/api/posts/${post.id}/like`, {
         method: isLiked ? 'DELETE' : 'POST',
       });
@@ -1134,18 +1861,26 @@ export default function FeedPage() {
       if (!response.ok) throw new Error(data.error || (isLiked ? 'Не удалось снять лайк.' : 'Не удалось поставить лайк.'));
       patchPostSnapshot(post.id, data.post);
     } catch (likeError) {
-      setError(likeError.message || 'Не удалось обновить лайк.');
+      showToast(likeError.message || 'Не удалось обновить лайк.', 'warning');
     } finally {
       setBusy('');
     }
   };
 
   const openComments = async (postId) => {
+    if (busy === `comments:${postId}`) return;
+    setFullTextPost(null);
     setCommentPostId(postId);
     setCommentReplyTarget(null);
     setCommentMenuId(null);
     setCommentComposerError('');
     setCommentLoadError('');
+    if (isClientOffline()) {
+      setCommentLoadError('Нет соединения. Комментарии не обновились.');
+      showToast('Нет соединения. Комментарии могут быть неактуальны.', 'warning');
+      setCommentLoading(false);
+      return;
+    }
     setCommentLoading(true);
     try {
       const response = await fetch(`/api/posts/${postId}/comments`, { cache: 'no-store' });
@@ -1154,8 +1889,8 @@ export default function FeedPage() {
       patchCommentsForPost(postId, data.comments || []);
     } catch (loadCommentsError) {
       const nextMessage = loadCommentsError.message || 'Не удалось загрузить комментарии.';
-      setError(nextMessage);
       setCommentLoadError(nextMessage);
+      showToast(nextMessage, 'warning');
     } finally {
       setCommentLoading(false);
     }
@@ -1163,7 +1898,13 @@ export default function FeedPage() {
 
   const addComment = async () => {
     const text = buildCommentText(commentText);
-    if (!text || !commentPostId) return;
+    if (!text || !commentPostId || busy === 'comment') return;
+    if (isClientOffline()) {
+      const nextMessage = 'Нет соединения. Комментарий не отправлен.';
+      setCommentComposerError(nextMessage);
+      showToast(nextMessage, 'warning');
+      return;
+    }
     try {
       setBusy('comment');
       setCommentComposerError('');
@@ -1183,10 +1924,11 @@ export default function FeedPage() {
       clearCommentDraft(commentPostId);
       setCommentText('');
       setCommentReplyTarget(null);
+      showToast('Комментарий опубликован.', 'success');
     } catch (commentError) {
       const nextMessage = commentError.message || 'Не удалось добавить комментарий.';
-      setError(nextMessage);
       setCommentComposerError(nextMessage);
+      showToast(nextMessage, 'warning');
     } finally {
       setBusy('');
     }
@@ -1323,6 +2065,10 @@ export default function FeedPage() {
     });
     if (nextText == null) return;
     const text = nextText.trim();
+    if (text.length > POST_TEXT_LIMIT) {
+      setError(`Текст поста не должен превышать ${POST_TEXT_LIMIT} символов.`);
+      return;
+    }
     if (!text || text === String(post.text || '').trim()) return;
 
     try {
@@ -1407,8 +2153,9 @@ export default function FeedPage() {
       try {
         await navigator.clipboard.writeText(url);
         closeShareSheet();
+        showToast('Ссылка скопирована.', 'success');
       } catch (_error) {
-        setError('Не удалось скопировать ссылку на публикацию.');
+        showToast('Не удалось скопировать ссылку на публикацию.', 'warning');
       }
       return;
     }
@@ -1432,9 +2179,10 @@ export default function FeedPage() {
       setSettingsDraft(nextSettings);
       setActiveChip(getAvailableTabs(nextSettings).includes(nextSettings.default_tab) ? nextSettings.default_tab : getAvailableTabs(nextSettings)[0]);
       setSettingsOpen(false);
-      await loadFeed();
+      showToast('Настройки ленты сохранены.', 'success');
+      await loadFeed({ silent: true });
     } catch (settingsError) {
-      setError(settingsError.message || 'Не удалось сохранить настройки ленты.');
+      showToast(settingsError.message || 'Не удалось сохранить настройки ленты.', 'warning');
     } finally {
       setSavingSettings(false);
     }
@@ -1560,10 +2308,173 @@ export default function FeedPage() {
     );
   };
 
+  const renderPostLayer = (post) => {
+    const isTextOpenForPost = Number(fullTextPost?.id || 0) === Number(post?.id || 0);
+    const isCommentsOpenForPost = Number(commentPost?.id || 0) === Number(post?.id || 0);
+    const isShareOpenForPost = Number(shareSheetPost?.id || 0) === Number(post?.id || 0);
+    if (!isTextOpenForPost && !isCommentsOpenForPost && !isShareOpenForPost) return null;
+
+    return (
+      <>
+        {isTextOpenForPost ? <PostTextSheet post={fullTextPost} onClose={() => setFullTextPost(null)} /> : null}
+        {isShareOpenForPost ? (
+          <RepostSheet
+            post={shareSheetPost}
+            onClose={closeShareSheet}
+            onRepostResult={(data, target) => {
+              if (data?.original_post) patchPostSnapshot(data.original_post.id, data.original_post);
+              if (data?.post && target?.targetType !== 'community') upsertPostSnapshot(data.post, { prepend: true });
+              showToast(data?.already_exists ? 'Репост уже есть в профиле.' : 'Репост создан.', 'success');
+            }}
+            onChatShareResult={(data) => {
+              if (data?.post && shareSheetPost) patchPostSnapshot(shareSheetPost.id, data.post);
+              showToast('Публикация отправлена в чат.', 'success');
+            }}
+            onSaveToggle={(postId) => handleToggleSave(postId)}
+          />
+        ) : null}
+        {isCommentsOpenForPost ? (
+          <BaseBottomSheet
+            open={isCommentsOpenForPost}
+            title="Комментарии"
+            subtitle={`${currentComments.length} ${getCountWord(currentComments.length, ['комментарий', 'комментария', 'комментариев'])}`}
+            onClose={() => { setCommentPostId(null); setCommentReplyTarget(null); setCommentMenuId(null); setCommentComposerError(''); setCommentLoadError(''); }}
+            className="feedV2-commentSheet"
+            scope="post"
+            contentClassName={`comment-list comment-list-flat ${commentLoading ? 'is-loading' : ''}`}
+            sheetRef={commentSheetRef}
+            contentRef={commentListRef}
+            titleId="feed-comments-title"
+            style={commentPost ? {
+              '--comment-sheet-keyboard-offset': `${commentSheetKeyboardInset}px`,
+              transform: `translateY(${commentSheetDragOffset}px)`,
+            } : undefined}
+            onSheetClick={(event) => { event.stopPropagation(); setCommentMenuId(null); }}
+            dragHandlers={{
+              onTouchStart: handleCommentSheetTouchStart,
+              onTouchMove: handleCommentSheetTouchMove,
+              onTouchEnd: handleCommentSheetTouchEnd,
+            }}
+            footer={(
+              <div className="comment-composer comment-composer-flat">
+                {commentReplyTarget ? (
+                  <div className="comment-replyBanner">
+                    <div className="comment-replyBannerMain">
+                      <div className="comment-replyBannerLabel">{getCommentReplyLabel(commentReplyTarget)}</div>
+                      <button type="button" className="comment-replyBannerTextBtn" onClick={() => focusCommentById(commentReplyTarget.id)}>
+                        <span className="comment-replyBannerText">{commentReplyTarget.text}</span>
+                      </button>
+                    </div>
+                    <button type="button" className="comment-replyBannerClose" onClick={() => setCommentReplyTarget(null)} aria-label="Отменить ответ">×</button>
+                  </div>
+                ) : null}
+                <div className="comment-composerRow">
+                  <textarea
+                    ref={commentTextareaRef}
+                    className="comment-input comment-input-flat"
+                    placeholder={getCommentComposerPlaceholder(commentPost, commentReplyTarget)}
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    onFocus={() => {
+                      window.setTimeout(() => {
+                        const node = commentTextareaRef.current;
+                        node?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                      }, 80);
+                    }}
+                    onKeyDown={(event) => {
+                      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+                        event.preventDefault();
+                        addComment();
+                      }
+                    }}
+                    rows={1}
+                  />
+                  <button className="comment-composer-btn comment-composerSend" type="button" onClick={addComment} disabled={busy === 'comment' || !buildCommentText(commentText)} aria-label={busy === 'comment' ? 'Отправляем комментарий' : 'Отправить комментарий'}>
+                    {busy === 'comment' ? (
+                      <span className="comment-sendSpinner" aria-hidden="true" />
+                    ) : (
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12 20 4l-4 16-4-7-8-1z"></path><path d="m12 13 8-9"></path></svg>
+                    )}
+                  </button>
+                </div>
+                <div className={`comment-composerMeta ${commentComposerError ? 'is-error' : commentSlowState ? 'is-warning' : hasCommentDraft ? 'is-draft' : ''}`}>
+                  <span className="comment-composerState">{commentComposerStateLabel || 'Комментарий увидят все, у кого есть доступ к посту'}</span>
+                  {commentComposerError ? <button type="button" className="comment-composerMetaBtn" onClick={addComment}>Повторить</button> : null}
+                </div>
+              </div>
+            )}
+          >
+            {commentLoading ? (
+              <div className="comment-loadingList">
+                {[0, 1, 2].map((item) => (
+                  <div key={item} className="comment-loadingCard">
+                    <div className="comment-loadingAvatar"></div>
+                    <div className="comment-loadingLines">
+                      <span className="comment-loadingLine is-short"></span>
+                      <span className="comment-loadingLine"></span>
+                      <span className="comment-loadingLine is-shorter"></span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : commentLoadError ? (
+              <div className="comment-stateCard is-error">
+                <div className="comment-stateTitle">Не удалось открыть комментарии</div>
+                <div className="comment-stateText">{commentLoadError}</div>
+                <button type="button" className="comment-stateBtn" onClick={() => openComments(commentPostId)}>Повторить</button>
+              </div>
+            ) : sortedTopLevelComments.length ? (
+              <>
+                {visibleTopLevelComments.map((comment) => {
+                  const rootId = Number(comment.id || 0);
+                  const replies = repliesByRootId.get(rootId) || [];
+                  const repliesExpanded = Boolean(expandedReplyRoots[rootId]);
+                  return (
+                    <div className="comment-threadGroup" key={comment.id}>
+                      {renderCommentCard(comment)}
+                      {replies.length ? (
+                        <div className="comment-threadMeta">
+                          <button
+                            type="button"
+                            className="comment-threadToggle"
+                            onClick={() => setExpandedReplyRoots((prev) => ({ ...prev, [rootId]: !prev[rootId] }))}
+                          >
+                            {getCommentThreadToggleLabel(replies.length, repliesExpanded)}
+                          </button>
+                        </div>
+                      ) : null}
+                      {replies.length && repliesExpanded ? (
+                        <div className="comment-threadChildren">
+                          {replies.map((reply) => renderCommentCard(reply, true))}
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })}
+                {remainingCommentThreads > 0 ? (
+                  <div className="comment-loadMoreRow">
+                    <button type="button" className="comment-loadMoreBtn" onClick={() => setVisibleCommentRoots((prev) => prev + 6)}>
+                      Показать ещё {remainingCommentThreads}
+                    </button>
+                  </div>
+                ) : null}
+              </>
+            ) : (
+              <div className="comment-emptyInline">
+                <div className="comment-emptyTitle">Будьте первым, кто ответит</div>
+                <div className="comment-emptyText">Комментарии появятся здесь, внутри этой публикации.</div>
+              </div>
+            )}
+          </BaseBottomSheet>
+        ) : null}
+      </>
+    );
+  };
+
   return (
     <div className="app-shell">
       <div className={`app profile-app ${contentMode === 'videos' ? 'feedV2-appVideo' : ''}`}>
-        <div className={`screen feed-screen feedV2-screen active ${contentMode === 'videos' ? 'feedV2-videoMode' : ''} ${settingsOpen ? 'is-settings-open' : ''} ${commentPostId ? 'is-comments-open' : ''} ${shareSheetPost ? 'is-share-open' : ''}`}>
+        <div className={`screen feed-screen feedV2-screen feedV2-readOnly active ${contentMode === 'videos' ? 'feedV2-videoMode' : ''} ${settingsOpen ? 'is-settings-open' : ''} ${commentPostId ? 'is-comments-open' : ''} ${isPostSheetOpen ? 'is-post-sheet-open' : ''}`}>
           <header className="feedV2-topbar glass">
             <div className="feedV2-topRow">
               <div className="feedV2-modeSwitch" role="tablist" aria-label="Тип ленты" data-mode={contentMode} onKeyDown={handleContentModeKeyDown}>
@@ -1594,16 +2505,47 @@ export default function FeedPage() {
               <button className="feedV2-prefsChip" type="button" aria-label="Настроить ленту" onClick={openFeedSettings}>
                 {getFeedTabLabel(activeChip)} · {getFeedOrderShortLabel(feedSettings.sort_mode)}
               </button>
+              <button
+                className={`feedV8-refreshBtn ${refreshing ? 'is-loading' : ''}`}
+                type="button"
+                aria-label="Обновить ленту"
+                disabled={loading || refreshing}
+                onClick={() => loadFeed({ silent: true, feedback: true })}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 0 1-15.4 6.4"></path><path d="M3 12A9 9 0 0 1 18.4 5.6"></path><path d="M18 2v4h-4"></path><path d="M6 22v-4h4"></path></svg>
+              </button>
               <NotificationCenter buttonClassName="icon-btn notifications-btn feedV2-notificationsBtn" />
             </div>
           </header>
 
-          {error ? <div className="feedN-alert feedV2-alert">{error}</div> : null}
+          {(isOffline || refreshing) ? (
+            <div className={`feedV8-statusBar ${isOffline ? 'is-offline' : 'is-refreshing'}`} role="status">
+              <span>{isOffline ? 'Нет соединения · показываем доступные посты' : 'Обновляем ленту…'}</span>
+            </div>
+          ) : null}
 
           {loading ? (
-            <div className="feedN-empty feedV2-empty feedV2-emptyLoading">
-              <div className="feedV2-emptyTitle">Загружаем ленту</div>
-              <div className="feedV2-emptyText">Готовим посты для просмотра.</div>
+            <section className={`feedV2-skeletonList ${contentMode === 'videos' ? 'feedV8-videoSkeleton' : ''}`} aria-label="Загружаем ленту" aria-busy="true">
+              {[0, 1, 2].map((item) => (
+                <article className="feedV2-skeletonCard" key={item}>
+                  <div className="feedV2-skeletonHead">
+                    <span className="feedV2-skeletonAvatar" />
+                    <span className="feedV2-skeletonLine is-short" />
+                  </div>
+                  <div className="feedV2-skeletonMedia" />
+                  <span className="feedV2-skeletonLine" />
+                  <span className="feedV2-skeletonLine is-mid" />
+                </article>
+              ))}
+            </section>
+          ) : error ? (
+            <div className="feedN-empty feedV2-empty feedV2-errorState">
+              <div className="feedV2-emptyKicker">Лента</div>
+              <div className="feedV2-emptyTitle">Не удалось обновить ленту</div>
+              <div className="feedV2-emptyText">{error}</div>
+              <div className="feedV2-emptyActions">
+                <button className="feedV2-emptyBtn" type="button" onClick={() => loadFeed()}>Повторить</button>
+              </div>
             </div>
           ) : visiblePosts.length === 0 ? (
             <div className="feedN-empty feedV2-empty">
@@ -1629,15 +2571,22 @@ export default function FeedPage() {
             <section
               ref={feedListRef}
               id={contentMode === 'videos' ? 'feed-v2-videos' : 'feed-v2-posts'}
-              className={`feed-list feedV2-list ${contentMode === 'videos' ? 'feedV2-listVideo' : ''}`}
+              className={`feed-list feedV2-list ${contentMode === 'videos' ? 'feedV2-listVideo' : ''} ${isPostSheetOpen ? 'feedV9-listLocked feedV10-listLocked' : ''}`}
               aria-label={contentMode === 'videos' ? 'Видеолента' : 'Лента постов'}
-              aria-hidden={settingsOpen || commentPostId || shareSheetPost ? 'true' : undefined}
+              aria-hidden={settingsOpen ? 'true' : undefined}
+              data-interaction-locked={isPostSheetOpen ? activePostSheetKind : undefined}
+              onPointerDownCapture={guardFeedGestureWhileSheetOpen}
+              onPointerMoveCapture={guardFeedGestureWhileSheetOpen}
+              onTouchStartCapture={guardFeedGestureWhileSheetOpen}
+              onTouchMoveCapture={guardFeedGestureWhileSheetOpen}
+              onWheelCapture={guardFeedGestureWhileSheetOpen}
             >
               {visiblePosts.map((post) => (
                 <div className={`feedV2-item ${contentMode === 'videos' ? 'feedV2-itemVideo' : ''}`} key={post.id}>
                   <FeedPost
                     post={post}
                     onOpenComments={openComments}
+                    onOpenFullText={setFullTextPost}
                     onOpenProfile={openProfile}
                     onOpenCommunity={openCommunity}
                     onVote={handleVote}
@@ -1648,6 +2597,8 @@ export default function FeedPage() {
                     onEdit={handleEditPost}
                     onDelete={handleDeletePost}
                     actionBusyKey={busy}
+                    saveFeedbackLabel={Number(saveFeedback?.postId || 0) === Number(post.id) ? saveFeedback.label : ''}
+                    sheetSlot={renderPostLayer(post)}
                   />
                 </div>
               ))}
@@ -1658,19 +2609,6 @@ export default function FeedPage() {
         <PostAuthBottomNav current="feed" />
       </div>
 
-      <PostShareSheet
-        open={Boolean(shareSheetPost)}
-        post={shareSheetPost}
-        onClose={closeShareSheet}
-        onRepostResult={(data, target) => {
-          if (data?.original_post) patchPostSnapshot(data.original_post.id, data.original_post);
-          if (data?.post && target?.targetType !== 'community') upsertPostSnapshot(data.post, { prepend: true });
-        }}
-        onChatShareResult={(data) => {
-          if (data?.post && shareSheetPost) patchPostSnapshot(shareSheetPost.id, data.post);
-        }}
-        onSaveToggle={(postId) => handleToggleSave(postId)}
-      />
       <div className={`notifications-overlay ${settingsOpen ? 'open' : ''}`} onClick={closeFeedSettings} onWheel={(event) => event.preventDefault()} onTouchMove={(event) => event.preventDefault()}></div>
       <aside ref={feedSettingsSheetRef} className={`notifications-sheet feed-settings-sheet ${settingsOpen ? 'open' : ''}`} role="dialog" aria-modal={settingsOpen ? 'true' : undefined} aria-labelledby="feed-settings-title" aria-hidden={!settingsOpen} tabIndex={-1}>
         <div className="notifications-head">
@@ -1738,156 +2676,16 @@ export default function FeedPage() {
         </div>
       </aside>
 
-      <div
-        className={`global-comment-overlay feedV2-commentOverlay ${commentPost ? 'open' : ''}`}
-        onClick={() => setCommentPostId(null)}
-        onWheel={(event) => event.preventDefault()}
-        onTouchMove={(event) => event.preventDefault()}
-      ></div>
-      <section
-        ref={commentSheetRef}
-        className={`global-comment-sheet feedV2-commentSheet ${commentPost ? 'open' : ''}`}
-        role="dialog"
-        aria-modal={commentPost ? 'true' : undefined}
-        aria-labelledby="feed-comments-title"
-        tabIndex={-1}
-        style={commentPost ? {
-          '--comment-sheet-keyboard-offset': `${commentSheetKeyboardInset}px`,
-          transform: `translateX(-50%) translateY(${commentSheetDragOffset}px)`,
-        } : undefined}
-        onClick={(event) => { event.stopPropagation(); setCommentMenuId(null); }}
-      >
-        <div
-          className="comment-sheetDragZone"
-          onTouchStart={handleCommentSheetTouchStart}
-          onTouchMove={handleCommentSheetTouchMove}
-          onTouchEnd={handleCommentSheetTouchEnd}
-        >
-          <div className="comment-sheet-handle"></div>
-          <div className="comment-sheet-header">
-            <div>
-              <div className="comment-sheet-title" id="feed-comments-title">Комментарии</div>
-              <div className="comment-sheet-meta">{currentComments.length} {currentComments.length === 1 ? 'комментарий' : currentComments.length >= 2 && currentComments.length <= 4 ? 'комментария' : 'комментариев'}</div>
-            </div>
-            <button className="ghost-btn comment-sheet-closeBtn" type="button" onClick={() => { setCommentPostId(null); setCommentReplyTarget(null); setCommentMenuId(null); setCommentComposerError(''); setCommentLoadError(''); }}>Закрыть</button>
-          </div>
-          <div className="comment-sheetControls">
-            <div className="comment-sortRow" role="tablist" aria-label="Сортировка комментариев">
-              <button type="button" className={`comment-sortBtn ${commentSortMode === 'activity' ? 'active' : ''}`} onClick={() => setCommentSortMode('activity')}>Обсуждение</button>
-              <button type="button" className={`comment-sortBtn ${commentSortMode === 'latest' ? 'active' : ''}`} onClick={() => setCommentSortMode('latest')}>Новые</button>
-              <button type="button" className={`comment-sortBtn ${commentSortMode === 'popular' ? 'active' : ''}`} onClick={() => setCommentSortMode('popular')}>Популярные</button>
-              <button type="button" className={`comment-sortBtn ${commentSortMode === 'author' ? 'active' : ''}`} onClick={() => setCommentSortMode('author')}>Автор</button>
-            </div>
-            <div className="comment-sheetNavRow">
-              <span className="comment-sheetNavMeta">Сортировка: {getCommentSortLabel(commentSortMode)}</span>
-              <button type="button" className="comment-sheetNavBtn" onClick={focusCommentComposer}>К ответу</button>
-            </div>
-          </div>
+
+      {toast ? (
+        <div className={`feedV8-toast is-${toast.tone}`} role="status" aria-live="polite">
+          <span>{toast.message}</span>
+          <button type="button" onClick={() => setToast(null)} aria-label="Закрыть уведомление">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12"></path><path d="M18 6 6 18"></path></svg>
+          </button>
         </div>
-        <div ref={commentListRef} className={`comment-list comment-list-flat ${commentLoading ? 'is-loading' : ''}`}>
-          {commentLoading ? (
-            <div className="comment-loadingList">
-              {[0, 1, 2].map((item) => (
-                <div key={item} className="comment-loadingCard">
-                  <div className="comment-loadingAvatar"></div>
-                  <div className="comment-loadingLines">
-                    <span className="comment-loadingLine is-short"></span>
-                    <span className="comment-loadingLine"></span>
-                    <span className="comment-loadingLine is-shorter"></span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : commentLoadError ? (
-            <div className="comment-stateCard is-error">
-              <div className="comment-stateTitle">Не удалось открыть комментарии</div>
-              <div className="comment-stateText">{commentLoadError}</div>
-              <button type="button" className="comment-stateBtn" onClick={() => openComments(commentPostId)}>Повторить</button>
-            </div>
-          ) : sortedTopLevelComments.length ? (
-            visibleTopLevelComments.map((comment) => {
-              const rootId = Number(comment.id || 0);
-              const replies = repliesByRootId.get(rootId) || [];
-              const repliesExpanded = Boolean(expandedReplyRoots[rootId]);
-              return (
-                <div className="comment-threadGroup" key={comment.id}>
-                  {renderCommentCard(comment)}
-                  {replies.length ? (
-                    <div className="comment-threadMeta">
-                      <button
-                        type="button"
-                        className="comment-threadToggle"
-                        onClick={() => setExpandedReplyRoots((prev) => ({ ...prev, [rootId]: !prev[rootId] }))}
-                      >
-                        {getCommentThreadToggleLabel(replies.length, repliesExpanded)}
-                      </button>
-                    </div>
-                  ) : null}
-                  {replies.length && repliesExpanded ? (
-                    <div className="comment-threadChildren">
-                      {replies.map((reply) => renderCommentCard(reply, true))}
-                    </div>
-                  ) : null}
-                </div>
-              );
-            })
-          ) : (
-            <div className="comment-stateCard comment-emptyState">
-              <div className="comment-stateTitle">Пока без комментариев</div>
-              <div className="comment-stateText">Напишите первый комментарий — обсуждение появится прямо под публикацией.</div>
-            </div>
-          )}
-          {remainingCommentThreads > 0 ? (
-            <div className="comment-loadMoreRow">
-              <button type="button" className="comment-loadMoreBtn" onClick={() => setVisibleCommentRoots((prev) => prev + 6)}>
-                Показать ещё {remainingCommentThreads}
-              </button>
-            </div>
-          ) : null}
-        </div>
-        <div className="comment-composer comment-composer-flat">
-          {commentReplyTarget ? (
-            <div className="comment-replyBanner">
-              <div className="comment-replyBannerMain">
-                <div className="comment-replyBannerLabel">{getCommentReplyLabel(commentReplyTarget)}</div>
-                <button type="button" className="comment-replyBannerTextBtn" onClick={() => focusCommentById(commentReplyTarget.id)}>
-                  <span className="comment-replyBannerText">{commentReplyTarget.text}</span>
-                </button>
-              </div>
-              <button type="button" className="comment-replyBannerClose" onClick={() => setCommentReplyTarget(null)} aria-label="Отменить ответ">×</button>
-            </div>
-          ) : null}
-          <div className="comment-composerRow">
-            <textarea
-              ref={commentTextareaRef}
-              className="comment-input comment-input-flat"
-              placeholder={getCommentComposerPlaceholder(commentPost, commentReplyTarget)}
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-              onFocus={() => {
-                window.setTimeout(() => {
-                  const node = commentTextareaRef.current;
-                  node?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }, 80);
-              }}
-              onKeyDown={(event) => {
-                if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
-                  event.preventDefault();
-                  addComment();
-                }
-              }}
-              rows={1}
-            />
-            <button className="comment-composer-btn comment-composerSend" type="button" onClick={addComment} disabled={busy === 'comment' || !buildCommentText(commentText)}>
-              {busy === 'comment' ? '...' : 'Отправить'}
-            </button>
-          </div>
-          <div className={`comment-composerMeta ${commentComposerError ? 'is-error' : commentSlowState ? 'is-warning' : hasCommentDraft ? 'is-draft' : ''}`}>
-            <span className="comment-composerState">{commentComposerStateLabel || 'Комментарий увидят все, у кого есть доступ к посту'}</span>
-            {commentComposerError ? <button type="button" className="comment-composerMetaBtn" onClick={addComment}>Повторить</button> : null}
-          </div>
-        </div>
-      </section>
+      ) : null}
+
       <MinimalActionDialog {...actionDialog.dialogProps} />
     </div>
   );

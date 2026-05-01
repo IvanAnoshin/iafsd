@@ -12,6 +12,7 @@ import { COMMUNITIES_UI_ENABLED } from '@/lib/product-flags';
 
 const PROFILE_CACHE_KEY = 'page:profile';
 const PROFILE_CACHE_TTL = 3 * 60 * 1000;
+const POST_TEXT_LIMIT = 1000;
 
 const toneOptions = [
   { value: 'violet', label: 'Фиолетовый' },
@@ -187,7 +188,7 @@ function ProfileInlineComposer({
         <textarea
           ref={textareaRef}
           value={value}
-          onChange={(event) => onChange(event.target.value)}
+          onChange={(event) => onChange(event.target.value.slice(0, POST_TEXT_LIMIT))}
           onKeyDown={(event) => {
             if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
               event.preventDefault();
@@ -197,6 +198,7 @@ function ProfileInlineComposer({
           rows={1}
           placeholder="Что нового?"
           aria-label="Текст публикации"
+          maxLength={POST_TEXT_LIMIT}
         />
 
         <button
@@ -249,6 +251,8 @@ function ProfileInlineComposer({
           />
         </div>
       ) : null}
+
+      <div className="profileComposer-counter">{value.length}/{POST_TEXT_LIMIT}</div>
 
       {media.length ? (
         <div className="profileComposer-attachments" aria-label="Прикреплённые файлы">
@@ -1035,6 +1039,10 @@ export default function ProfilePage() {
 
   const publishPost = async () => {
     const text = composerText.trim();
+    if (text.length > POST_TEXT_LIMIT) {
+      setPostsError('Текст поста не должен превышать ' + POST_TEXT_LIMIT + ' символов.');
+      return;
+    }
     if (!text && !composerMedia.length) return;
 
     try {
