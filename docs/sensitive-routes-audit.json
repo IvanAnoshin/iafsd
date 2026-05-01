@@ -1,0 +1,170 @@
+{
+  "scanned": 41,
+  "flagged": 0,
+  "rows": [
+    {
+      "file": "app/api/account/deletion/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/account/export/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/admin/analytics/overview/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/admin/behavior/export/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/admin/communities/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/admin/launch/verification/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/admin/moderation/actions/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/admin/moderation/queue/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/admin/monitoring/overview/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/admin/reports/comments/[id]/status/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/admin/reports/comments/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/admin/reports/messages/[id]/status/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/admin/reports/messages/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/admin/reports/posts/[id]/status/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/admin/reports/posts/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/admin/reports/targets/[id]/status/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/admin/reports/targets/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/admin/safety-flags/[id]/status/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/admin/safety-flags/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/admin/support/tickets/[id]/status/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/admin/support/tickets/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/admin/users/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/auth/passkeys/[id]/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/auth/passkeys/authenticate/options/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/auth/passkeys/authenticate/verify/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/auth/passkeys/register/options/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/auth/passkeys/register/verify/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/auth/passkeys/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/auth/recover/backup/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/auth/recover/phrase/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/auth/recover/secret/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/auth/recover/support/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/auth/recover/trusted-device/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/auth/recovery/complete/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/auth/recovery/questions/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/auth/recovery/request/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/auth/recovery/status/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/auth/recovery/submit-answers/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/devices/[deviceId]/pin/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/devices/[deviceId]/route.js",
+      "flags": []
+    },
+    {
+      "file": "app/api/devices/route.js",
+      "flags": []
+    }
+  ]
+}

@@ -1,0 +1,128 @@
+{
+  "checked_at": "2026-04-26T18:46:37.130Z",
+  "status": "ready",
+  "checks": [
+    {
+      "name": "file:lib/media-security.js",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "file:lib/url-safety.js",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "file:lib/chat.js",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "file:lib/posts.js",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "file:lib/communities.js",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "file:lib/stories.js",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "file:app/api/feed/posts/route.js",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "file:app/api/profile/posts/route.js",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "file:next.config.js",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "upload_sniffing",
+      "status": "ok",
+      "detail": "upload signature checks are present"
+    },
+    {
+      "name": "media_reference_scope_guard",
+      "status": "ok",
+      "detail": "media references are checked against registry/scope"
+    },
+    {
+      "name": "server_media_url_sanitizer",
+      "status": "ok",
+      "detail": "server media URL sanitizer present"
+    },
+    {
+      "name": "media_guard:app/api/feed/posts/route.js",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "media_guard:app/api/profile/posts/route.js",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "media_guard:lib/communities.js",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "media_guard:lib/chat.js",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "media_guard:lib/stories.js",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "client_url_safety:app/feed/page.jsx",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "client_url_safety:app/communities/[slug]/page.jsx",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "client_url_safety:app/chat/components/ChatConversationWorkspace.jsx",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "csrf_error_shape",
+      "status": "ok",
+      "detail": "all CSRF failures return verifyCsrf response object"
+    },
+    {
+      "name": "csp_prod_no_unsafe_eval",
+      "status": "ok",
+      "detail": "unsafe-eval is limited to non-production branch"
+    },
+    {
+      "name": "csp_upgrade_insecure_requests",
+      "status": "ok",
+      "detail": "production CSP upgrades insecure requests"
+    },
+    {
+      "name": "dangerous_inner_html",
+      "status": "ok",
+      "detail": "only allowlisted bootstrap script uses dangerouslySetInnerHTML"
+    }
+  ],
+  "warnings": [],
+  "errors": []
+}

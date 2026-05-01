@@ -1,0 +1,25 @@
+[Unit]
+Description=Friendscape Next.js app
+After=network.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/var/www/friendscape-next
+Environment=NODE_ENV=production
+Environment=PORT=3000
+Environment=HOST=0.0.0.0
+EnvironmentFile=/var/www/friendscape-next/.env.production
+ExecStart=/usr/bin/npm run start:prod
+Restart=always
+RestartSec=5
+User=www-data
+Group=www-data
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/var/www/friendscape-next/.next /var/www/friendscape-next/public/uploads /var/log/friendscape /var/backups/friendscape
+
+[Install]
+WantedBy=multi-user.target

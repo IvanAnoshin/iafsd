@@ -1,0 +1,456 @@
+{
+  "generated_at": "2026-04-26T18:45:15.217Z",
+  "root": "work_v97",
+  "checks": {
+    "demo_seed": {
+      "key": "demo_seed",
+      "title": "Demo/seed data in runtime code",
+      "pattern": {},
+      "severity": "high",
+      "count": 0,
+      "hits": []
+    },
+    "runtime_unavailable": {
+      "key": "runtime_unavailable",
+      "title": "User-facing unavailable/fallback text",
+      "pattern": {},
+      "severity": "medium",
+      "count": 72,
+      "hits": [
+        {
+          "file": "app/api/feed/posts/[postId]/comments/route.js",
+          "line": 57,
+          "text": "return NextResponse.json({ error: 'Пост недоступен.' }, { status: 403 });"
+        },
+        {
+          "file": "app/api/feed/posts/[postId]/comments/route.js",
+          "line": 99,
+          "text": "return NextResponse.json({ error: 'Пост недоступен.' }, { status: 403 });"
+        },
+        {
+          "file": "app/api/feed/posts/[postId]/route.js",
+          "line": 42,
+          "text": "if (!canView) return NextResponse.json({ error: 'Пост недоступен.' }, { status: 403 });"
+        },
+        {
+          "file": "app/api/feed/posts/[postId]/save/route.js",
+          "line": 22,
+          "text": "return NextResponse.json({ error: 'Пост недоступен.' }, { status: 403 });"
+        },
+        {
+          "file": "app/api/feed/posts/[postId]/share/route.js",
+          "line": 98,
+          "text": "return NextResponse.json({ error: 'Пост недоступен.' }, { status: 403 });"
+        },
+        {
+          "file": "app/api/feed/posts/[postId]/vote/route.js",
+          "line": 30,
+          "text": "return NextResponse.json({ error: 'Пост недоступен.' }, { status: 403 });"
+        },
+        {
+          "file": "app/api/posts/[id]/comments/route.js",
+          "line": 57,
+          "text": "return NextResponse.json({ error: 'Пост недоступен.' }, { status: 403 });"
+        },
+        {
+          "file": "app/api/posts/[id]/comments/route.js",
+          "line": 99,
+          "text": "return NextResponse.json({ error: 'Пост недоступен.' }, { status: 403 });"
+        },
+        {
+          "file": "app/api/posts/[id]/like/route.js",
+          "line": 51,
+          "text": "return NextResponse.json({ error: 'Пост недоступен.' }, { status: 403 });"
+        },
+        {
+          "file": "app/api/posts/[id]/like/route.js",
+          "line": 140,
+          "text": "return NextResponse.json({ error: 'Пост недоступен.' }, { status: 403 });"
+        },
+        {
+          "file": "app/api/posts/[id]/route.js",
+          "line": 41,
+          "text": "return NextResponse.json({ error: 'Пост недоступен.' }, { status: 403 });"
+        },
+        {
+          "file": "app/chat/components/ChatConversationWorkspace.jsx",
+          "line": 273,
+          "text": "text: 'Пока собеседник не примет запрос, новые сообщения и медиа будут недоступны.',"
+        },
+        {
+          "file": "app/chat/components/ChatConversationWorkspace.jsx",
+          "line": 282,
+          "text": "text: 'Этот диалог сейчас недоступен для новых сообщений. Можно просматривать историю, но не писать.',"
+        },
+        {
+          "file": "app/chat/components/ChatConversationWorkspace.jsx",
+          "line": 283,
+          "text": "composerTitle: 'Новые сообщения недоступны',"
+        },
+        {
+          "file": "app/chat/components/ChatConversationWorkspace.jsx",
+          "line": 285,
+          "text": "placeholder: 'Отправка сообщений недоступна',"
+        },
+        {
+          "file": "app/chat/components/ChatConversationWorkspace.jsx",
+          "line": 291,
+          "text": "text: 'Новые сообщения недоступны, пока не появится новый разрешённый сценарий общения.',"
+        },
+        {
+          "file": "app/chat/components/ChatConversationWorkspace.jsx",
+          "line": 1629,
+          "text": ": `Совпадений пока нет${conversationSearchType ? ` · ${searchFilterLabel(conversationSearchType)}` : ''}.`}"
+        },
+        {
+          "file": "app/chat/components/ChatConversationWorkspace.jsx",
+          "line": 1721,
+          "text": "<strong>{videoCallFallback.title || 'Видеозвонок недоступен'}</strong>"
+        },
+        {
+          "file": "app/chat/components/ChatConversationWorkspace.jsx",
+          "line": 1945,
+          "text": "<div className=\"chatW-emptyCard is-muted\"><strong>Пока пусто</strong><span>{mediaHubFilter === 'all' ? 'В этом диалоге ещё нет медиа и файлов.' : 'Для выбранного фильтра пока ничего не найдено.'}</span></div>"
+        },
+        {
+          "file": "app/chat/components/ChatOverlaySheets.jsx",
+          "line": 285,
+          "text": "}) : <div className=\"chatW-forwardEmpty\">Пока нет закреплённых сообщений.</div>}"
+        },
+        {
+          "file": "app/chat/components/ChatSidebar.jsx",
+          "line": 106,
+          "text": ": `Совпадений пока нет${globalSearchType ? ` · ${searchFilterLabel(globalSearchType)}` : ''}`}"
+        },
+        {
+          "file": "app/chat/components/ChatSidebar.jsx",
+          "line": 131,
+          "text": ") : (!globalSearchLoading && !globalSearchError ? <div className=\"chatW-globalSearchEmpty\">По этому запросу в сообщениях пока ничего не нашлось.</div> : null)}"
+        },
+        {
+          "file": "app/chat/components/ChatSidebar.jsx",
+          "line": 160,
+          "text": "{!savedMessagesLoading && !savedMessagesError && !savedMessages.length ? <div className=\"chatW-empty\">Сохранённых сообщений пока нет.</div> : null}"
+        },
+        {
+          "file": "app/chat/components/ChatSidebar.jsx",
+          "line": 205,
+          "text": "{!loadingChats && !filteredChats.length ? <div className=\"chatW-empty\">{sidebarMode === 'archived' ? 'В архиве пока ничего нет.' : 'Диалогов пока нет.'}</div> : null}"
+        },
+        {
+          "file": "app/chat/components/ChatSidebar.jsx",
+          "line": 235,
+          "text": "{!loadingRequests && !filteredRequests.length ? <div className=\"chatW-empty\">Новых запросов на переписку пока нет.</div> : null}"
+        },
+        {
+          "file": "app/chat/hooks/useCallRuntime.js",
+          "line": 93,
+          "text": "if (!response.ok || !payload?.enabled) throw new Error(payload?.error || 'Звонки сейчас недоступны.');"
+        },
+        {
+          "file": "app/chat/hooks/useMessageSelection.js",
+          "line": 191,
+          "text": "setErrorText('В загруженной части пока нет сообщений для пакетных действий.');"
+        },
+        {
+          "file": "app/chat/hooks/useRecorderAndMedia.js",
+          "line": 320,
+          "text": "return { code: 'device_not_found', message: 'Камера не найдена или недоступна. Видеокружок сейчас недоступен.' };"
+        },
+        {
+          "file": "app/chat/hooks/useRecorderAndMedia.js",
+          "line": 362,
+          "text": "? 'Камера не найдена. Видеозвонок сейчас недоступен.'"
+        },
+        {
+          "file": "app/chat/hooks/useRecorderAndMedia.js",
+          "line": 363,
+          "text": ": 'Камера не найдена. Видеокружок сейчас недоступен.';"
+        },
+        {
+          "file": "app/chat/hooks/useRecorderAndMedia.js",
+          "line": 367,
+          "text": "? 'Микрофон не найден. Видеозвонок сейчас недоступен.'"
+        },
+        {
+          "file": "app/chat/hooks/useRecorderAndMedia.js",
+          "line": 368,
+          "text": ": 'Микрофон не найден. Видеокружок сейчас недоступен.';"
+        },
+        {
+          "file": "app/chat/hooks/useRecorderAndMedia.js",
+          "line": 837,
+          "text": "if (!file || usingFallback) throw new Error('Загрузка файлов сейчас недоступна.');"
+        },
+        {
+          "file": "app/chat/page.jsx",
+          "line": 94,
+          "text": "if (mode === 'recorder') return wantsVideo ? 'Камера не найдена или недоступна. Проверьте настройки устройства и браузера.' : 'Микрофон не найден. Проверьте подключение устройства.';"
+        },
+        {
+          "file": "app/chat/page.jsx",
+          "line": 96,
+          "text": "return wantsVideo ? 'Камера не найдена или недоступна. Проверьте настройки устройства и браузера.' : 'Микрофон не найден. Проверьте подключение устройства.';"
+        },
+        {
+          "file": "app/chat/page.jsx",
+          "line": 107,
+          "text": "? 'Камера и микрофон не найдены. Видеозвонок сейчас недоступен.'"
+        },
+        {
+          "file": "app/chat/page.jsx",
+          "line": 108,
+          "text": ": 'Камера и микрофон не найдены. Видеокружок сейчас недоступен.';"
+        },
+        {
+          "file": "app/chat/page.jsx",
+          "line": 112,
+          "text": "? 'Камера не найдена. Видеозвонок сейчас недоступен.'"
+        },
+        {
+          "file": "app/chat/page.jsx",
+          "line": 113,
+          "text": ": 'Камера не найдена. Видеокружок сейчас недоступен.';"
+        },
+        {
+          "file": "app/chat/page.jsx",
+          "line": 117,
+          "text": "? 'Микрофон не найден. Видеозвонок сейчас недоступен.'"
+        }
+      ]
+    },
+    "native_alert": {
+      "key": "native_alert",
+      "title": "Native browser alerts",
+      "pattern": {},
+      "severity": "medium",
+      "count": 0,
+      "hits": []
+    },
+    "local_uploads": {
+      "key": "local_uploads",
+      "title": "Local public uploads / non-production file storage",
+      "pattern": {},
+      "severity": "high",
+      "count": 41,
+      "hits": [
+        {
+          "file": "lib/chat-media.js",
+          "line": 11,
+          "text": "const ROOT_UPLOADS_DIR = path.join(ROOT_PUBLIC_DIR, 'uploads', 'chat');"
+        },
+        {
+          "file": "lib/chat-media.js",
+          "line": 133,
+          "text": "basePath: '/uploads/chat',"
+        },
+        {
+          "file": "lib/chat-media.js",
+          "line": 228,
+          "text": "if (!rawUrl.startsWith('/uploads/chat/')) return null;"
+        },
+        {
+          "file": "lib/chat-media.js",
+          "line": 238,
+          "text": "const targetPath = path.join(ROOT_UPLOADS_DIR, ...segments);"
+        },
+        {
+          "file": "lib/chat-media.js",
+          "line": 239,
+          "text": "const normalizedRoot = path.normalize(ROOT_UPLOADS_DIR + path.sep);"
+        },
+        {
+          "file": "lib/chat-media.js",
+          "line": 418,
+          "text": "const targetDir = path.join(ROOT_UPLOADS_DIR, ...parts);"
+        },
+        {
+          "file": "lib/chat-media.js",
+          "line": 422,
+          "text": "publicUrl = path.posix.join('/uploads/chat', ...parts, filename);"
+        },
+        {
+          "file": "lib/chat-media.js",
+          "line": 425,
+          "text": "const preview = await writeLocalPreview({ rootDir: ROOT_UPLOADS_DIR, basePath: '/uploads/chat', parts, filename, previewBuffer });"
+        },
+        {
+          "file": "lib/community-media.js",
+          "line": 17,
+          "text": "const ROOT_UPLOADS_DIR = path.join(ROOT_PUBLIC_DIR, 'uploads', 'communities');"
+        },
+        {
+          "file": "lib/community-media.js",
+          "line": 81,
+          "text": "basePath: '/uploads/communities',"
+        },
+        {
+          "file": "lib/community-media.js",
+          "line": 197,
+          "text": "if (raw.startsWith('/uploads/communities/')) {"
+        },
+        {
+          "file": "lib/community-media.js",
+          "line": 199,
+          "text": "return raw.startsWith(`/uploads/communities/${communityId}/`);"
+        },
+        {
+          "file": "lib/community-media.js",
+          "line": 209,
+          "text": "if (!raw.startsWith('/uploads/communities/')) return null;"
+        },
+        {
+          "file": "lib/community-media.js",
+          "line": 212,
+          "text": "const targetPath = path.join(ROOT_UPLOADS_DIR, ...relative.split('/').filter(Boolean));"
+        },
+        {
+          "file": "lib/community-media.js",
+          "line": 213,
+          "text": "const normalizedRoot = path.normalize(ROOT_UPLOADS_DIR + path.sep);"
+        },
+        {
+          "file": "lib/community-media.js",
+          "line": 319,
+          "text": "const targetDir = path.join(ROOT_UPLOADS_DIR, ...parts);"
+        },
+        {
+          "file": "lib/community-media.js",
+          "line": 323,
+          "text": "publicUrl = path.posix.join('/uploads/communities', ...parts, filename);"
+        },
+        {
+          "file": "lib/community-media.js",
+          "line": 326,
+          "text": "const preview = await writeLocalPreview({ rootDir: ROOT_UPLOADS_DIR, basePath: '/uploads/communities', parts, filename, previewBuffer });"
+        },
+        {
+          "file": "lib/post-media.js",
+          "line": 11,
+          "text": "const ROOT_UPLOADS_DIR = path.join(ROOT_PUBLIC_DIR, 'uploads', 'posts');"
+        },
+        {
+          "file": "lib/post-media.js",
+          "line": 83,
+          "text": "basePath: '/uploads/posts',"
+        },
+        {
+          "file": "lib/post-media.js",
+          "line": 177,
+          "text": "if (!raw.startsWith('/uploads/posts/')) return null;"
+        },
+        {
+          "file": "lib/post-media.js",
+          "line": 181,
+          "text": "const targetPath = path.join(ROOT_UPLOADS_DIR, ...segments);"
+        },
+        {
+          "file": "lib/post-media.js",
+          "line": 182,
+          "text": "const normalizedRoot = path.normalize(ROOT_UPLOADS_DIR + path.sep);"
+        },
+        {
+          "file": "lib/post-media.js",
+          "line": 280,
+          "text": "const targetDir = path.join(ROOT_UPLOADS_DIR, ...parts);"
+        },
+        {
+          "file": "lib/post-media.js",
+          "line": 284,
+          "text": "publicUrl = path.posix.join('/uploads/posts', ...parts, filename);"
+        },
+        {
+          "file": "lib/post-media.js",
+          "line": 287,
+          "text": "const preview = await writeLocalPreview({ rootDir: ROOT_UPLOADS_DIR, basePath: '/uploads/posts', parts, filename, previewBuffer });"
+        },
+        {
+          "file": "lib/story-media.js",
+          "line": 11,
+          "text": "const ROOT_UPLOADS_DIR = path.join(ROOT_PUBLIC_DIR, 'uploads', 'stories');"
+        },
+        {
+          "file": "lib/story-media.js",
+          "line": 83,
+          "text": "basePath: '/uploads/stories',"
+        },
+        {
+          "file": "lib/story-media.js",
+          "line": 177,
+          "text": "if (!raw.startsWith('/uploads/stories/')) return null;"
+        },
+        {
+          "file": "lib/story-media.js",
+          "line": 181,
+          "text": "const targetPath = path.join(ROOT_UPLOADS_DIR, ...segments);"
+        },
+        {
+          "file": "lib/story-media.js",
+          "line": 182,
+          "text": "const normalizedRoot = path.normalize(ROOT_UPLOADS_DIR + path.sep);"
+        },
+        {
+          "file": "lib/story-media.js",
+          "line": 280,
+          "text": "const targetDir = path.join(ROOT_UPLOADS_DIR, ...parts);"
+        },
+        {
+          "file": "lib/story-media.js",
+          "line": 284,
+          "text": "publicUrl = path.posix.join('/uploads/stories', ...parts, filename);"
+        },
+        {
+          "file": "lib/story-media.js",
+          "line": 287,
+          "text": "const preview = await writeLocalPreview({ rootDir: ROOT_UPLOADS_DIR, basePath: '/uploads/stories', parts, filename, previewBuffer });"
+        },
+        {
+          "file": "scripts/check-env.mjs",
+          "line": 130,
+          "text": "warnings.push(`${prefix}_STORAGE=local is enabled in production. Keep it only for a single-server deployment with backed-up public/uploads.`);"
+        },
+        {
+          "file": "scripts/cleanup-community-media.mjs",
+          "line": 22,
+          "text": "if (!raw.startsWith('/uploads/communities/')) return null;"
+        },
+        {
+          "file": "scripts/cleanup-media.mjs",
+          "line": 14,
+          "text": "{ name: 'community', urlPrefix: '/uploads/communities/', localRoot: path.join(root, 'public', 'uploads', 'communities'), objectRoot: 'communities', configPrefix: 'COMMUNITY_MEDIA', story: false },"
+        },
+        {
+          "file": "scripts/cleanup-media.mjs",
+          "line": 15,
+          "text": "{ name: 'post', urlPrefix: '/uploads/posts/', localRoot: path.join(root, 'public', 'uploads', 'posts'), objectRoot: 'posts', configPrefix: 'POST_MEDIA', story: false },"
+        },
+        {
+          "file": "scripts/cleanup-media.mjs",
+          "line": 16,
+          "text": "{ name: 'chat', urlPrefix: '/uploads/chat/', localRoot: path.join(root, 'public', 'uploads', 'chat'), objectRoot: 'chat', configPrefix: 'CHAT_MEDIA', story: false },"
+        },
+        {
+          "file": "scripts/cleanup-media.mjs",
+          "line": 17,
+          "text": "{ name: 'story', urlPrefix: '/uploads/stories/', localRoot: path.join(root, 'public', 'uploads', 'stories'), objectRoot: 'stories', configPrefix: 'STORY_MEDIA', story: true },"
+        }
+      ]
+    },
+    "process_memory_realtime": {
+      "key": "process_memory_realtime",
+      "title": "Process-memory realtime state",
+      "pattern": {},
+      "severity": "high",
+      "count": 0,
+      "hits": []
+    },
+    "temporary_notes": {
+      "key": "temporary_notes",
+      "title": "TODO/FIXME/HACK markers",
+      "pattern": {},
+      "severity": "low",
+      "count": 0,
+      "hits": []
+    }
+  }
+}

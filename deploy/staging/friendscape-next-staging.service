@@ -1,0 +1,27 @@
+[Unit]
+Description=Friendscape Next.js staging app
+After=network.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/var/www/friendscape-next-staging
+Environment=NODE_ENV=production
+Environment=APP_ENV=staging
+Environment=APP_RELEASE_CHANNEL=staging
+Environment=PORT=3001
+Environment=HOST=0.0.0.0
+EnvironmentFile=/var/www/friendscape-next-staging/.env.staging
+ExecStart=/usr/bin/npm run start:prod
+Restart=always
+RestartSec=5
+User=www-data
+Group=www-data
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/var/www/friendscape-next-staging/.next /var/www/friendscape-next-staging/public/uploads /var/log/friendscape-staging /var/backups/friendscape-staging
+
+[Install]
+WantedBy=multi-user.target

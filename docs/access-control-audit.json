@@ -1,0 +1,863 @@
+{
+  "generated_at": "2026-04-26T18:26:54.527Z",
+  "summary": {
+    "needs_review": 52,
+    "reviewed_or_guarded": 70
+  },
+  "findings": [
+    {
+      "file": "app/api/auth/passkeys/[id]/route.js",
+      "line": 25,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/auth/recovery/complete/route.js",
+      "line": 62,
+      "pattern": "raw-id-findUnique",
+      "status": "needs_review",
+      "note": "findUnique by raw id should be paired with owner/member/access check."
+    },
+    {
+      "file": "app/api/communities/[slug]/comments/[commentId]/route.js",
+      "line": 16,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/communities/[slug]/invites/route.js",
+      "line": 12,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/communities/[slug]/media/route.js",
+      "line": 11,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/communities/[slug]/members/[memberId]/route.js",
+      "line": 16,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/communities/[slug]/membership/route.js",
+      "line": 22,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/communities/[slug]/moderation/route.js",
+      "line": 11,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/communities/[slug]/posts/[postId]/route.js",
+      "line": 16,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/communities/[slug]/posts/route.js",
+      "line": 15,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/communities/[slug]/requests/[requestId]/route.js",
+      "line": 16,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/communities/[slug]/requests/route.js",
+      "line": 10,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/communities/[slug]/route.js",
+      "line": 13,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/communities/[slug]/similar/route.js",
+      "line": 10,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/devices/[deviceId]/pin/route.js",
+      "line": 27,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/devices/[deviceId]/route.js",
+      "line": 16,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/friends/[id]/accept/route.js",
+      "line": 8,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/friends/[id]/reject/route.js",
+      "line": 7,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/friends/[id]/request/route.js",
+      "line": 9,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/friends/[id]/route.js",
+      "line": 7,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/people/route.js",
+      "line": 279,
+      "pattern": "raw-id-findUnique",
+      "status": "needs_review",
+      "note": "findUnique by raw id should be paired with owner/member/access check."
+    },
+    {
+      "file": "app/api/profile/posts/[postId]/route.js",
+      "line": 28,
+      "pattern": "raw-id-findUnique",
+      "status": "needs_review",
+      "note": "findUnique by raw id should be paired with owner/member/access check."
+    },
+    {
+      "file": "app/api/profile/posts/[postId]/route.js",
+      "line": 22,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/profile/posts/[postId]/route.js",
+      "line": 34,
+      "pattern": "json-payload-media",
+      "status": "needs_review",
+      "note": "Media in Json payload needs explicit post/story/community visibility checks."
+    },
+    {
+      "file": "app/api/reports/comments/[commentId]/route.js",
+      "line": 25,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/reports/posts/[id]/route.js",
+      "line": 19,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/stories/[id]/extend/route.js",
+      "line": 14,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/stories/[id]/reaction/route.js",
+      "line": 14,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/stories/[id]/reply/route.js",
+      "line": 14,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/stories/[id]/route.js",
+      "line": 13,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/stories/[id]/seen/route.js",
+      "line": 13,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/users/[id]/communities/route.js",
+      "line": 10,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/users/[id]/connections/route.js",
+      "line": 36,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/users/[id]/friends/count/route.js",
+      "line": 14,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/users/[id]/friends/route.js",
+      "line": 12,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/users/[id]/online-status/route.js",
+      "line": 17,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/users/[id]/presence/route.js",
+      "line": 12,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/users/[id]/relationship/route.js",
+      "line": 10,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/users/[id]/route.js",
+      "line": 33,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/users/[id]/subscribe/route.js",
+      "line": 8,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/users/[id]/subscribers/count/route.js",
+      "line": 14,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/users/[id]/subscribers/route.js",
+      "line": 12,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/users/[id]/subscriptions/count/route.js",
+      "line": 14,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/users/[id]/subscriptions/route.js",
+      "line": 12,
+      "pattern": "route-param-id",
+      "status": "needs_review",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "lib/chat-media.js",
+      "line": 253,
+      "pattern": "json-payload-media",
+      "status": "needs_review",
+      "note": "Media in Json payload needs explicit post/story/community visibility checks."
+    },
+    {
+      "file": "lib/community-media.js",
+      "line": 201,
+      "pattern": "json-payload-media",
+      "status": "needs_review",
+      "note": "Media in Json payload needs explicit post/story/community visibility checks."
+    },
+    {
+      "file": "lib/notifications.js",
+      "line": 168,
+      "pattern": "raw-id-findUnique",
+      "status": "needs_review",
+      "note": "findUnique by raw id should be paired with owner/member/access check."
+    },
+    {
+      "file": "lib/object-storage.js",
+      "line": 276,
+      "pattern": "storage-proxy",
+      "status": "needs_review",
+      "note": "Storage proxy must verify ownership/membership before redirect."
+    },
+    {
+      "file": "lib/post-media.js",
+      "line": 218,
+      "pattern": "json-payload-media",
+      "status": "needs_review",
+      "note": "Media in Json payload needs explicit post/story/community visibility checks."
+    },
+    {
+      "file": "lib/profile-media.js",
+      "line": 98,
+      "pattern": "json-payload-media",
+      "status": "needs_review",
+      "note": "Media in Json payload needs explicit post/story/community visibility checks."
+    },
+    {
+      "file": "lib/social.js",
+      "line": 35,
+      "pattern": "raw-id-findUnique",
+      "status": "needs_review",
+      "note": "findUnique by raw id should be paired with owner/member/access check."
+    },
+    {
+      "file": "lib/story-media.js",
+      "line": 218,
+      "pattern": "json-payload-media",
+      "status": "needs_review",
+      "note": "Media in Json payload needs explicit post/story/community visibility checks."
+    },
+    {
+      "file": "app/api/admin/reports/comments/[id]/status/route.js",
+      "line": 8,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/admin/reports/messages/[id]/status/route.js",
+      "line": 8,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/admin/reports/posts/[id]/status/route.js",
+      "line": 8,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/admin/reports/targets/[id]/status/route.js",
+      "line": 8,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/admin/safety-flags/[id]/status/route.js",
+      "line": 8,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/admin/support/tickets/[id]/status/route.js",
+      "line": 8,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/chat/calls/[id]/action/route.js",
+      "line": 16,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/chat/calls/[id]/route.js",
+      "line": 10,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/chat/calls/[id]/signal/route.js",
+      "line": 13,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/chats/[id]/archive/route.js",
+      "line": 17,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/chats/[id]/draft/route.js",
+      "line": 8,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/chats/[id]/e2ee/route.js",
+      "line": 10,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/chats/[id]/messages/route.js",
+      "line": 18,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/chats/[id]/mute/route.js",
+      "line": 17,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/chats/[id]/pin/route.js",
+      "line": 17,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/chats/[id]/pins/route.js",
+      "line": 11,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/chats/[id]/read/route.js",
+      "line": 14,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/chats/[id]/search/route.js",
+      "line": 12,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/chats/[id]/typing/route.js",
+      "line": 12,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/comments/[id]/route.js",
+      "line": 102,
+      "pattern": "raw-id-findUnique",
+      "status": "reviewed_or_guarded",
+      "note": "findUnique by raw id should be paired with owner/member/access check."
+    },
+    {
+      "file": "app/api/comments/[id]/route.js",
+      "line": 21,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/comments/[id]/vote/route.js",
+      "line": 22,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/communities/[slug]/media/upload/route.js",
+      "line": 30,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/feed/posts/[postId]/comments/route.js",
+      "line": 52,
+      "pattern": "raw-id-findUnique",
+      "status": "reviewed_or_guarded",
+      "note": "findUnique by raw id should be paired with owner/member/access check."
+    },
+    {
+      "file": "app/api/feed/posts/[postId]/comments/route.js",
+      "line": 46,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/feed/posts/[postId]/route.js",
+      "line": 69,
+      "pattern": "raw-id-findUnique",
+      "status": "reviewed_or_guarded",
+      "note": "findUnique by raw id should be paired with owner/member/access check."
+    },
+    {
+      "file": "app/api/feed/posts/[postId]/route.js",
+      "line": 18,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/feed/posts/[postId]/save/route.js",
+      "line": 19,
+      "pattern": "raw-id-findUnique",
+      "status": "reviewed_or_guarded",
+      "note": "findUnique by raw id should be paired with owner/member/access check."
+    },
+    {
+      "file": "app/api/feed/posts/[postId]/save/route.js",
+      "line": 13,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/feed/posts/[postId]/share/route.js",
+      "line": 79,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/feed/posts/[postId]/vote/route.js",
+      "line": 25,
+      "pattern": "raw-id-findUnique",
+      "status": "reviewed_or_guarded",
+      "note": "findUnique by raw id should be paired with owner/member/access check."
+    },
+    {
+      "file": "app/api/feed/posts/[postId]/vote/route.js",
+      "line": 13,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/feed/posts/route.js",
+      "line": 57,
+      "pattern": "json-payload-media",
+      "status": "reviewed_or_guarded",
+      "note": "Media in Json payload needs explicit post/story/community visibility checks."
+    },
+    {
+      "file": "app/api/message-requests/[id]/accept/route.js",
+      "line": 13,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/message-requests/[id]/block/route.js",
+      "line": 13,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/message-requests/[id]/reject/route.js",
+      "line": 13,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/messages/[id]/context/route.js",
+      "line": 12,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/messages/[id]/pin/route.js",
+      "line": 8,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/messages/[id]/reaction/route.js",
+      "line": 8,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/messages/[id]/report/route.js",
+      "line": 9,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/messages/[id]/route.js",
+      "line": 8,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/messages/[id]/save/route.js",
+      "line": 8,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/notifications/[id]/read/route.js",
+      "line": 15,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/posts/[id]/comments/route.js",
+      "line": 52,
+      "pattern": "raw-id-findUnique",
+      "status": "reviewed_or_guarded",
+      "note": "findUnique by raw id should be paired with owner/member/access check."
+    },
+    {
+      "file": "app/api/posts/[id]/comments/route.js",
+      "line": 46,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/posts/[id]/like/route.js",
+      "line": 46,
+      "pattern": "raw-id-findUnique",
+      "status": "reviewed_or_guarded",
+      "note": "findUnique by raw id should be paired with owner/member/access check."
+    },
+    {
+      "file": "app/api/posts/[id]/like/route.js",
+      "line": 40,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/posts/[id]/route.js",
+      "line": 15,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/profile/posts/route.js",
+      "line": 94,
+      "pattern": "json-payload-media",
+      "status": "reviewed_or_guarded",
+      "note": "Media in Json payload needs explicit post/story/community visibility checks."
+    },
+    {
+      "file": "app/api/storage/chat/[...key]/route.js",
+      "line": 43,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/storage/chat/[...key]/route.js",
+      "line": 4,
+      "pattern": "storage-proxy",
+      "status": "reviewed_or_guarded",
+      "note": "Storage proxy must verify ownership/membership before redirect."
+    },
+    {
+      "file": "app/api/storage/community/[...key]/route.js",
+      "line": 35,
+      "pattern": "raw-id-findUnique",
+      "status": "reviewed_or_guarded",
+      "note": "findUnique by raw id should be paired with owner/member/access check."
+    },
+    {
+      "file": "app/api/storage/community/[...key]/route.js",
+      "line": 30,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/storage/community/[...key]/route.js",
+      "line": 5,
+      "pattern": "storage-proxy",
+      "status": "reviewed_or_guarded",
+      "note": "Storage proxy must verify ownership/membership before redirect."
+    },
+    {
+      "file": "app/api/storage/post/[...key]/route.js",
+      "line": 24,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/storage/post/[...key]/route.js",
+      "line": 3,
+      "pattern": "storage-proxy",
+      "status": "reviewed_or_guarded",
+      "note": "Storage proxy must verify ownership/membership before redirect."
+    },
+    {
+      "file": "app/api/storage/story/[...key]/route.js",
+      "line": 24,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/storage/story/[...key]/route.js",
+      "line": 3,
+      "pattern": "storage-proxy",
+      "status": "reviewed_or_guarded",
+      "note": "Storage proxy must verify ownership/membership before redirect."
+    },
+    {
+      "file": "app/api/users/[id]/media/route.js",
+      "line": 15,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "app/api/users/[id]/posts/route.js",
+      "line": 19,
+      "pattern": "route-param-id",
+      "status": "reviewed_or_guarded",
+      "note": "Dynamic route should validate viewer access before returning or mutating data."
+    },
+    {
+      "file": "lib/auth.js",
+      "line": 193,
+      "pattern": "raw-id-findUnique",
+      "status": "reviewed_or_guarded",
+      "note": "findUnique by raw id should be paired with owner/member/access check."
+    },
+    {
+      "file": "lib/chat-calls.js",
+      "line": 192,
+      "pattern": "raw-id-findUnique",
+      "status": "reviewed_or_guarded",
+      "note": "findUnique by raw id should be paired with owner/member/access check."
+    },
+    {
+      "file": "lib/chat.js",
+      "line": 1033,
+      "pattern": "raw-id-findUnique",
+      "status": "reviewed_or_guarded",
+      "note": "findUnique by raw id should be paired with owner/member/access check."
+    },
+    {
+      "file": "lib/chat.js",
+      "line": 123,
+      "pattern": "json-payload-media",
+      "status": "reviewed_or_guarded",
+      "note": "Media in Json payload needs explicit post/story/community visibility checks."
+    },
+    {
+      "file": "lib/communities.js",
+      "line": 671,
+      "pattern": "raw-id-findUnique",
+      "status": "reviewed_or_guarded",
+      "note": "findUnique by raw id should be paired with owner/member/access check."
+    },
+    {
+      "file": "lib/communities.js",
+      "line": 785,
+      "pattern": "json-payload-media",
+      "status": "reviewed_or_guarded",
+      "note": "Media in Json payload needs explicit post/story/community visibility checks."
+    },
+    {
+      "file": "lib/media-security.js",
+      "line": 158,
+      "pattern": "json-payload-media",
+      "status": "reviewed_or_guarded",
+      "note": "Media in Json payload needs explicit post/story/community visibility checks."
+    },
+    {
+      "file": "lib/posts.js",
+      "line": 31,
+      "pattern": "json-payload-media",
+      "status": "reviewed_or_guarded",
+      "note": "Media in Json payload needs explicit post/story/community visibility checks."
+    },
+    {
+      "file": "lib/reports.js",
+      "line": 170,
+      "pattern": "raw-id-findUnique",
+      "status": "reviewed_or_guarded",
+      "note": "findUnique by raw id should be paired with owner/member/access check."
+    },
+    {
+      "file": "lib/stories.js",
+      "line": 253,
+      "pattern": "json-payload-media",
+      "status": "reviewed_or_guarded",
+      "note": "Media in Json payload needs explicit post/story/community visibility checks."
+    }
+  ]
+}

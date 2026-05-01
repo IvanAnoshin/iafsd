@@ -1,0 +1,178 @@
+{
+  "checked_at": "2026-04-26T18:46:37.325Z",
+  "status": "ready",
+  "checks": [
+    {
+      "name": ".env.example",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": ".env.staging.example",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": ".env.production.example",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "scripts/release-check.mjs",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "scripts/rollback-check.mjs",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "scripts/check-release-pipeline.mjs",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "docs/RELEASE_RUNBOOK.md",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "docs/ROLLBACK_RUNBOOK.md",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "docs/STAGING_RELEASE_PIPELINE_V96.md",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "deploy/staging/friendscape-next-staging.service",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "deploy/staging/ecosystem.staging.config.cjs",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "deploy/staging/nginx-staging.conf",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "script:check:env",
+      "status": "ok",
+      "detail": "node scripts/check-env.mjs"
+    },
+    {
+      "name": "script:check:staging",
+      "status": "ok",
+      "detail": "node scripts/check-env.mjs --env-file=.env.staging.example"
+    },
+    {
+      "name": "script:release:check",
+      "status": "ok",
+      "detail": "node scripts/check-release-pipeline.mjs"
+    },
+    {
+      "name": "script:release:staging",
+      "status": "ok",
+      "detail": "node scripts/release-check.mjs --target=staging --env-file=.env.staging.example"
+    },
+    {
+      "name": "script:release:prod",
+      "status": "ok",
+      "detail": "node scripts/release-check.mjs --target=production --env-file=.env.production.example"
+    },
+    {
+      "name": "script:rollback:check",
+      "status": "ok",
+      "detail": "node scripts/rollback-check.mjs"
+    },
+    {
+      "name": "script:backup:db",
+      "status": "ok",
+      "detail": "node scripts/backup-db.mjs"
+    },
+    {
+      "name": "script:deploy:migrate",
+      "status": "ok",
+      "detail": "node scripts/migrate-prod.mjs"
+    },
+    {
+      "name": "script:smoke:e2e",
+      "status": "ok",
+      "detail": "node scripts/smoke-e2e.mjs"
+    },
+    {
+      "name": "script:monitor:alerts",
+      "status": "ok",
+      "detail": "node scripts/check-monitoring-alerts.mjs"
+    },
+    {
+      "name": "staging_env:APP_ENV",
+      "status": "ok",
+      "detail": "staging"
+    },
+    {
+      "name": "staging_env:APP_RELEASE_CHANNEL",
+      "status": "ok",
+      "detail": "staging"
+    },
+    {
+      "name": "staging_env:APP_PUBLIC_URL",
+      "status": "ok",
+      "detail": "https://staging.friendscape.example.com"
+    },
+    {
+      "name": "staging_env:separate_storage",
+      "status": "ok",
+      "detail": "uses staging bucket/prefix"
+    },
+    {
+      "name": "production_env:APP_ENV",
+      "status": "ok",
+      "detail": "production"
+    },
+    {
+      "name": "production_env:APP_RELEASE_CHANNEL",
+      "status": "ok",
+      "detail": "production"
+    },
+    {
+      "name": "release_runbook:release_order",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "rollback_runbook:backup_path",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "v96_doc:pipeline_flow",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "migrate_prod:uses_migrate_deploy",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "prisma_push:blocked_in_production",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "version_api:release_metadata",
+      "status": "ok",
+      "detail": "present"
+    }
+  ],
+  "warnings": [],
+  "errors": []
+}

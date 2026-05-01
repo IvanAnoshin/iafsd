@@ -1,0 +1,4 @@
+ALTER TABLE "UserPublicProfile" ADD COLUMN IF NOT EXISTS "coverTone" TEXT NOT NULL DEFAULT 'violet';
+ALTER TABLE "UserPublicProfile" ADD COLUMN IF NOT EXISTS "avatarUrl" TEXT;
+ALTER TABLE "UserPublicProfile" ADD COLUMN IF NOT EXISTS "coverUrl" TEXT;
+ALTER TABLE "UserPublicProfile" ADD COLUMN IF NOT EXISTS "interests" JSONB;

@@ -1,0 +1,47 @@
+import { NextResponse } from 'next/server';
+import { getCurrentSession, touchSession, verifyCsrf } from '@/lib/auth';
+import { writeAuditLog } from '@/lib/audit';
+import { deleteMessage, editMessage } from '@/lib/chat';
+
+export async function PUT(request, { params }) {
+  let session = null;
+  const messageId = (await params).id;
+  try {
+    const csrf = verifyCsrf(request);
+    if (!csrf.ok) return csrf.response;
+
+    session = await getCurrentSession();
+    if (!session) return NextResponse.json({ error: 'Требуется авторизация.' }, { status: 401 });
+
+    await touchSession(session.id);
+    const body = await request.json();
+    const message = await editMessage(session.user.id, messageId, body.text);
+    await writeAuditLog({ request, session, action: 'chat.message.edit', entityType: 'message', entityId: messageId });
+    return NextResponse.json({ message }, { headers: { 'Cache-Control': 'no-store' } });
+  } catch (error) {
+    console.error('chat message edit failed', error);
+    await writeAuditLog({ request, session, action: 'chat.message.edit', entityType: 'message', entityId: messageId, status: 'error', metadata: { error: error?.message || String(error) } });
+    return NextResponse.json({ error: error?.message || 'Не удалось изменить сообщение.' }, { status: error?.status || 500 });
+  }
+}
+
+export async function DELETE(request, { params }) {
+  let session = null;
+  const messageId = (await params).id;
+  try {
+    const csrf = verifyCsrf(request);
+    if (!csrf.ok) return csrf.response;
+
+    session = await getCurrentSession();
+    if (!session) return NextResponse.json({ error: 'Требуется авторизация.' }, { status: 401 });
+
+    await touchSession(session.id);
+    const message = await deleteMessage(session.user.id, messageId);
+    await writeAuditLog({ request, session, action: 'chat.message.delete', entityType: 'message', entityId: messageId });
+    return NextResponse.json({ message }, { headers: { 'Cache-Control': 'no-store' } });
+  } catch (error) {
+    console.error('chat message delete failed', error);
+    await writeAuditLog({ request, session, action: 'chat.message.delete', entityType: 'message', entityId: messageId, status: 'error', metadata: { error: error?.message || String(error) } });
+    return NextResponse.json({ error: error?.message || 'Не удалось удалить сообщение.' }, { status: error?.status || 500 });
+  }
+}

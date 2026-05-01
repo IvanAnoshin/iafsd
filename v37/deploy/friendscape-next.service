@@ -1,0 +1,18 @@
+[Unit]
+Description=Friendscape Next.js app
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/var/www/friendscape-next
+Environment=NODE_ENV=production
+Environment=PORT=3000
+EnvironmentFile=/var/www/friendscape-next/.env.production
+ExecStart=/usr/bin/npm run start:prod
+Restart=always
+RestartSec=5
+User=www-data
+Group=www-data
+
+[Install]
+WantedBy=multi-user.target

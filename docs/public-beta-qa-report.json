@@ -1,0 +1,173 @@
+{
+  "checked_at": "2026-04-28T09:17:48.362Z",
+  "status": "ready",
+  "checks": [
+    {
+      "name": "app/feedback/page.jsx",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "app/settings/page.jsx",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "app/chat/page.jsx",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "components/PostAuthBottomNav.jsx",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "lib/support.js",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "docs/PUBLIC_BETA_QA_V97.md",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "docs/PUBLIC_BETA_RELEASE_NOTES.md",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "script:beta:qa",
+      "status": "ok",
+      "detail": "node scripts/public-beta-qa.mjs"
+    },
+    {
+      "name": "script:verify:launch",
+      "status": "ok",
+      "detail": "node scripts/verify-launch.mjs"
+    },
+    {
+      "name": "script:qa:alpha",
+      "status": "ok",
+      "detail": "node scripts/alpha-qa.mjs"
+    },
+    {
+      "name": "script:smoke:e2e",
+      "status": "ok",
+      "detail": "node scripts/smoke-e2e.mjs"
+    },
+    {
+      "name": "script:security:check",
+      "status": "ok",
+      "detail": "node scripts/check-security-pass.mjs"
+    },
+    {
+      "name": "script:release:check",
+      "status": "ok",
+      "detail": "node scripts/check-release-pipeline.mjs"
+    },
+    {
+      "name": "script:rollback:check",
+      "status": "ok",
+      "detail": "node scripts/rollback-check.mjs"
+    },
+    {
+      "name": "feedback_page:csrf_and_status",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "bottom_nav:feedback_entry_removed",
+      "status": "ok",
+      "detail": "no feedback entry in bottom nav"
+    },
+    {
+      "name": "settings:feedback_entry",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "settings:support_beta_categories",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "feed:read_only_aggregator",
+      "status": "ok",
+      "detail": "posting composer removed from feed"
+    },
+    {
+      "name": "support:safe_context",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "proxy:feedback_protected",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "headers:feedback_no_store",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "smoke:feedback_page",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "chat:debug_disabled_in_production",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "chat:no_fake_fallback_seed",
+      "status": "ok",
+      "detail": "no demo fallback chat seed"
+    },
+    {
+      "name": "runtime:no_console_log",
+      "status": "ok",
+      "detail": "no stray console.log in app/components runtime"
+    },
+    {
+      "name": "production_env:no_localhost",
+      "status": "ok",
+      "detail": "no localhost/dev DB defaults"
+    },
+    {
+      "name": "production_env:release_channel",
+      "status": "ok",
+      "detail": "production"
+    },
+    {
+      "name": "docs/RELEASE_RUNBOOK.md",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "docs/ROLLBACK_RUNBOOK.md",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "docs/ALPHA_RELEASE_NOTES.md",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "beta_release_notes:limitations_and_feedback",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "beta_qa:critical_scenarios",
+      "status": "ok",
+      "detail": "present"
+    }
+  ],
+  "warnings": [],
+  "errors": []
+}

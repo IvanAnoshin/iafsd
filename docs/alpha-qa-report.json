@@ -1,0 +1,168 @@
+{
+  "checked_at": "2026-04-28T09:17:50.133Z",
+  "status": "ready",
+  "checks": [
+    {
+      "name": "required_pages",
+      "status": "ok",
+      "detail": "18 pages present"
+    },
+    {
+      "name": "required_docs",
+      "status": "ok",
+      "detail": "18 docs present"
+    },
+    {
+      "name": "script:verify:launch",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "script:audit:placeholders",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "script:audit:access-control",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "script:audit:sensitive-routes",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "script:smoke:e2e",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "script:qa:alpha",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "script:account:deletions",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "script:monitor:alerts",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "script:realtime:check",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "script:storage:check",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "script:performance:check",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "script:accessibility:check",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "script:security:check",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "script:release:check",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "script:rollback:check",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "script:beta:qa",
+      "status": "ok",
+      "detail": "present"
+    },
+    {
+      "name": "proxy:/profile",
+      "status": "ok",
+      "detail": "protected"
+    },
+    {
+      "name": "proxy:/feed",
+      "status": "ok",
+      "detail": "protected"
+    },
+    {
+      "name": "proxy:/chat",
+      "status": "ok",
+      "detail": "protected"
+    },
+    {
+      "name": "proxy:/people",
+      "status": "ok",
+      "detail": "protected"
+    },
+    {
+      "name": "proxy:/settings",
+      "status": "ok",
+      "detail": "protected"
+    },
+    {
+      "name": "proxy:/feedback",
+      "status": "ok",
+      "detail": "protected"
+    },
+    {
+      "name": "proxy:/communities",
+      "status": "ok",
+      "detail": "protected"
+    },
+    {
+      "name": "proxy:/stories",
+      "status": "ok",
+      "detail": "protected"
+    },
+    {
+      "name": "proxy_no_store",
+      "status": "ok",
+      "detail": "protected pages add no-store headers"
+    },
+    {
+      "name": "api_no_store",
+      "status": "ok",
+      "detail": "api responses have no-store header"
+    },
+    {
+      "name": "page_no_store",
+      "status": "ok",
+      "detail": "core pages have no-store header rule"
+    },
+    {
+      "name": "csrf_write_routes",
+      "status": "ok",
+      "detail": "all non-exempt write routes have CSRF guard"
+    },
+    {
+      "name": "native_dialogs",
+      "status": "ok",
+      "detail": "no alert/confirm/prompt calls in runtime"
+    },
+    {
+      "name": "runtime_seeds",
+      "status": "ok",
+      "detail": "no ungated runtime seed data detected"
+    }
+  ],
+  "warnings": [],
+  "errors": []
+}
