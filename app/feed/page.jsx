@@ -659,6 +659,17 @@ export default function FeedPage() {
   }, [activeChip, availableTabs]);
 
   useEffect(() => {
+    const videoPageClass = 'feedV2-videoPage';
+    const isVideoPage = contentMode === 'videos';
+    document.documentElement.classList.toggle(videoPageClass, isVideoPage);
+    document.body.classList.toggle(videoPageClass, isVideoPage);
+    return () => {
+      document.documentElement.classList.remove(videoPageClass);
+      document.body.classList.remove(videoPageClass);
+    };
+  }, [contentMode]);
+
+  useEffect(() => {
     const hasOverlayOpen = Boolean(settingsOpen || commentPostId || shareSheetPost);
     const previousBodyOverflow = document.body.style.overflow;
     const previousBodyTouchAction = document.body.style.touchAction;

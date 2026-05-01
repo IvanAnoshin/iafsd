@@ -26666,3 +26666,45 @@ body[data-reduced-motion='true'] *::after {
     min-height: 42px;
   }
 }
+
+/* v187: video mode desktop gutters in the same dark blue tone as video content. */
+html.feedV2-videoPage,
+body.feedV2-videoPage {
+  background:
+    radial-gradient(circle at 50% 46%, rgba(66, 107, 140, 0.34), transparent 30%),
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.08), transparent 24%),
+    linear-gradient(180deg, #111827 0%, #0d1824 48%, #05060a 100%) !important;
+}
+
+.profile-app.feedV2-appVideo {
+  background:
+    radial-gradient(circle at 50% 42%, rgba(66, 107, 140, 0.22), transparent 30%),
+    #05060a;
+}
+
+@media (min-width: 900px) {
+  .profile-app.feedV2-appVideo {
+    box-shadow: 0 0 120px rgba(66, 107, 140, 0.18);
+  }
+}
+
+/* v186: Desktop single-column width expansion — keeps mobile layout and navigation untouched. */
+@media (min-width: 900px) {
+  .profile-app {
+    max-width: min(560px, calc(100vw - 48px));
+  }
+
+  .screen {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .feedV2-screen:not(.feedV2-videoMode) {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .feedV2-screen:not(.feedV2-videoMode) .feedV2-card.fsPost-card {
+    padding: 16px;
+  }
+}
